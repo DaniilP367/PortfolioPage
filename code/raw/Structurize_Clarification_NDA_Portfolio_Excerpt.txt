@@ -1,0 +1,557 @@
+/*
+    Portfolio excerpt: Structurize + Clarification subsystem
+    NDA-safe version.
+
+    Boundary used for this excerpt:
+    - Shows the clarification loop, prompt construction, answer accumulation, and
+      structured-spec placeholder validation.
+    - All function names, type names, field names, and local variables are replaced
+      with ID labels.
+    - Direct model calls, database commits, command menu glue, and the production
+      Structurize implementation file are not included because they are outside
+      this excerpt boundary.
+
+    What this demonstrates:
+    1) The system does not guess missing task details.
+    2) It asks one focused question at a time.
+    3) It preserves user answers as evidence before later planning.
+    4) It rejects structured specs where editable placeholders do not have
+       corresponding parameter declarations.
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <stdarg.h>
+
+#define C001 64
+#define C002 1024
+#define C003 8192
+#define C004 256
+
+/* Callback that supplies one line of operator input. */
+typedef int (*T001)(char *v001, size_t v002, void *v003);
+
+/* Callback that supplies the next model response. The concrete model backend is outside this excerpt. */
+typedef int (*T002)(const char *v001, char *v002, size_t v003, void *v004);
+
+/* Clarification request. */
+typedef struct T003 {
+    const char *v001;  /* original task text */
+    const char *v002;  /* language / syntax hint */
+    int         v003;  /* privilege / environment hint */
+    int         v004;  /* debug flag */
+} T003;
+
+/* Growable text buffer. */
+typedef struct T004 {
+    char  *v001;
+    size_t v002;
+    size_t v003;
+} T004;
+
+/* Output of the clarification stage. */
+typedef struct T005 {
+    char *v001;  /* combined clarified description */
+    int   v002;  /* number of accepted answers */
+} T005;
+
+/* Structured-spec validation result. */
+typedef struct T006 {
+    int  v001;
+    char v002[1024];
+} T006;
+
+/* Duplicate a string with empty-string fallback. */
+static char *fn_001(const char *v001)
+{
+    size_t v002;
+    char *v003;
+
+    if (!v001) v001 = "";
+    v002 = strlen(v001);
+
+    v003 = (char*)malloc(v002 + 1);
+    if (!v003) return NULL;
+
+    memcpy(v003, v001, v002 + 1);
+    return v003;
+}
+
+/* Trim outer whitespace in-place. */
+static void fn_002(char *v001)
+{
+    char *v002;
+    size_t v003;
+
+    if (!v001 || !v001[0]) return;
+
+    v002 = v001;
+    while (*v002 == ' ' || *v002 == '\t' || *v002 == '\r' || *v002 == '\n') {
+        ++v002;
+    }
+
+    if (v002 != v001) {
+        memmove(v001, v002, strlen(v002) + 1);
+    }
+
+    v003 = strlen(v001);
+    while (v003 > 0) {
+        char v004 = v001[v003 - 1];
+        if (v004 == ' ' || v004 == '\t' || v004 == '\r' || v004 == '\n') {
+            v001[--v003] = '\0';
+        } else {
+            break;
+        }
+    }
+}
+
+/* Detect whether UTF-8 text contains Cyrillic bytes. */
+static int fn_003(const char *v001)
+{
+    if (!v001) return 0;
+
+    while (*v001) {
+        unsigned char v002 = (unsigned char)*v001;
+        if (v002 >= 0xD0 && v002 <= 0xD3) {
+            return 1;
+        }
+        ++v001;
+    }
+
+    return 0;
+}
+
+/* Append formatted text to a growable buffer. */
+static int fn_004(T004 *v001, const char *v002, ...)
+{
+    char v003[2048];
+    va_list v004;
+    int v005;
+    size_t v006;
+    char *v007;
+
+    if (!v001 || !v002) return 0;
+
+    va_start(v004, v002);
+    v005 = vsnprintf(v003, sizeof(v003), v002, v004);
+    va_end(v004);
+
+    if (v005 < 0) return 0;
+    v006 = (size_t)v005;
+    if (v006 >= sizeof(v003)) return 0;
+
+    if (!v001->v001) {
+        v001->v002 = v006 + 256;
+        v001->v001 = (char*)malloc(v001->v002);
+        if (!v001->v001) return 0;
+        v001->v001[0] = '\0';
+        v001->v003 = 0;
+    }
+
+    if (v001->v003 + v006 + 1 > v001->v002) {
+        size_t v008 = v001->v003 + v006 + 256;
+        v007 = (char*)realloc(v001->v001, v008);
+        if (!v007) return 0;
+        v001->v001 = v007;
+        v001->v002 = v008;
+    }
+
+    memcpy(v001->v001 + v001->v003, v003, v006 + 1);
+    v001->v003 += v006;
+    return 1;
+}
+
+/* Read multiline operator answer through an injected input callback. */
+static char *fn_005(T001 v001, void *v002)
+{
+    char v003[2048];
+    size_t v004 = 4096;
+    size_t v005 = 0;
+    char *v006;
+
+    if (!v001) return NULL;
+
+    v006 = (char*)malloc(v004);
+    if (!v006) return NULL;
+    v006[0] = '\0';
+
+    for (;;) {
+        size_t v007;
+        char *v008;
+
+        if (!v001(v003, sizeof(v003), v002)) {
+            break;
+        }
+
+        if (v003[0] == '\0') {
+            break;
+        }
+
+        v007 = strlen(v003);
+        if (v005 + v007 + 2 > v004) {
+            v004 *= 2;
+            v008 = (char*)realloc(v006, v004);
+            if (!v008) {
+                free(v006);
+                return NULL;
+            }
+            v006 = v008;
+        }
+
+        memcpy(v006 + v005, v003, v007);
+        v005 += v007;
+        v006[v005++] = '\n';
+        v006[v005] = '\0';
+    }
+
+    return v006;
+}
+
+/* Build the next-question prompt. */
+static void fn_006(const T003 *v001,
+                   const char *v002,
+                   int v003,
+                   char *v004,
+                   size_t v005)
+{
+    const char *v006;
+    const char *v007;
+    const char *v008;
+    const char *v009;
+    const char *v010;
+    const char *v011;
+    const char *v012;
+
+    if (!v004 || v005 == 0) return;
+    if (!v001) {
+        v004[0] = '\0';
+        return;
+    }
+
+    v006 = (v002 && v002[0]) ? v002 : "(no previous answers)";
+    v007 = (v001->v002 && v001->v002[0]) ? v001->v002 : "(no syntax hint)";
+
+    if (v003) {
+        v008 = "Ask the next clarification question in Russian.";
+        v009 = "On the first round, ask at least one question. Do not return '+'.";
+        v010 = "When the task is fully specified, return only '+'.";
+    } else {
+        v008 = "Ask the next clarification question in English.";
+        v009 = "On the first round, ask at least one question. Do not return '+'.";
+        v010 = "When the task is fully specified, return only '+'.";
+    }
+
+    if (v001->v003 < 0) {
+        v011 =
+            "Priority gate: clarify boot path, CPU mode, video output, input device, "
+            "delivery format, and memory/layout constraints before cosmetics.";
+    } else if (v001->v003 == 0) {
+        v011 =
+            "Priority gate: clarify privilege model, kernel access path, allowed constraints, "
+            "and exact privileged operations before implementation details.";
+    } else {
+        v011 = "Priority gate: normal user-mode task; clarify observable behavior and acceptance checks.";
+    }
+
+    v012 = (v002 && v002[0]) ? v010 : v009;
+
+    snprintf(v004, v005,
+        "%s\n"
+        "You are a clarification module for deterministic code assembly.\n"
+        "The goal is to collect missing facts before planning code fragments.\n\n"
+        "Original request:\n%s\n\n"
+        "Syntax hint: %s\n"
+        "Execution hint: %d\n\n"
+        "Previous Q/A:\n%s\n\n"
+        "%s\n"
+        "%s\n\n"
+        "Rules:\n"
+        "- Ask exactly one short question when information is missing.\n"
+        "- Return only '+' when all important details are known.\n"
+        "- Do not answer the task.\n"
+        "- Do not repeat previous questions.\n",
+        v011,
+        v001->v001 ? v001->v001 : "",
+        v007,
+        v001->v003,
+        v006,
+        v008,
+        v012);
+}
+
+/* Extract one question from a model response. */
+static void fn_007(const char *v001, char *v002, size_t v003)
+{
+    const char *v004 = NULL;
+    const char *v005 = NULL;
+    const char *v006;
+    size_t v007;
+
+    if (!v002 || v003 == 0) return;
+    v002[0] = '\0';
+
+    if (!v001 || !v001[0]) return;
+
+    v006 = v001;
+    for (const char *v008 = v001; *v008; ++v008) {
+        if (*v008 == '\n') {
+            v006 = v008 + 1;
+            continue;
+        }
+        if (*v008 == '?') {
+            v004 = v008;
+            v005 = v006;
+            break;
+        }
+    }
+
+    if (!v004 || !v005) {
+        strncpy(v002, v001, v003 - 1);
+        v002[v003 - 1] = '\0';
+        fn_002(v002);
+        return;
+    }
+
+    v007 = (size_t)(v004 - v005 + 1);
+    if (v007 >= v003) v007 = v003 - 1;
+
+    memcpy(v002, v005, v007);
+    v002[v007] = '\0';
+    fn_002(v002);
+
+    if (!strncmp(v002, "Question", 8) || !strncmp(v002, "Вопрос", 6)) {
+        char *v009 = strchr(v002, ':');
+        if (v009) {
+            memmove(v002, v009 + 1, strlen(v009 + 1) + 1);
+            fn_002(v002);
+        }
+    }
+}
+
+/* Normalize a plus marker or a prefixed plus marker. */
+static int fn_008(char *v001)
+{
+    size_t v002;
+
+    if (!v001) return 0;
+    fn_002(v001);
+
+    if (v001[0] != '+') return 0;
+
+    v002 = 1;
+    while (v001[v002] == ' ' || v001[v002] == '\t' || v001[v002] == '\r' || v001[v002] == '\n') {
+        ++v002;
+    }
+
+    if (v001[v002] == '\0') {
+        v001[0] = '\0';
+        return 1;
+    }
+
+    memmove(v001, v001 + v002, strlen(v001 + v002) + 1);
+    fn_002(v001);
+    return 0;
+}
+
+/* Build final clarified text from original request and Q/A evidence. */
+static char *fn_009(const char *v001, const T004 *v002)
+{
+    T004 v003;
+    char *v004;
+
+    memset(&v003, 0, sizeof(v003));
+
+    if (!fn_004(&v003, "Original request:\n%s\n\n", v001 ? v001 : "")) return NULL;
+
+    if (!v002 || !v002->v001 || !v002->v001[0]) {
+        if (!fn_004(&v003, "Clarification evidence:\n(no accepted answers)\n")) {
+            free(v003.v001);
+            return NULL;
+        }
+    } else {
+        if (!fn_004(&v003, "Clarification evidence:\n%s", v002->v001)) {
+            free(v003.v001);
+            return NULL;
+        }
+    }
+
+    v004 = v003.v001;
+    return v004;
+}
+
+/* Run the clarification loop. */
+static int fn_010(const T003 *v001,
+                  T001 v002,
+                  void *v003,
+                  T002 v004,
+                  void *v005,
+                  T005 *v006)
+{
+    T004 v007;
+    int v008;
+    int v009;
+
+    if (!v001 || !v001->v001 || !v002 || !v004 || !v006) return 1;
+
+    memset(v006, 0, sizeof(*v006));
+    memset(&v007, 0, sizeof(v007));
+
+    v008 = fn_003(v001->v001);
+
+    for (v009 = 0; v009 < C001; ++v009) {
+        char v010[C003];
+        char v011[C002];
+        char v012[C002];
+        char *v013;
+        int v014;
+
+        fn_006(v001, v007.v001, v008, v010, sizeof(v010));
+
+        v011[0] = '\0';
+        if (!v004(v010, v011, sizeof(v011), v005)) {
+            break;
+        }
+
+        fn_007(v011, v012, sizeof(v012));
+        v014 = fn_008(v012);
+
+        if (v014) {
+            break;
+        }
+
+        if (v012[0] == '\0') {
+            break;
+        }
+
+        printf("\nQuestion %d:\n%s\n", v009 + 1, v012);
+        printf("Answer; submit an empty line to stop:\n");
+
+        v013 = fn_005(v002, v003);
+        if (!v013) break;
+
+        fn_002(v013);
+        if (v013[0] == '\0') {
+            free(v013);
+            break;
+        }
+
+        if (!fn_004(&v007, "Question %d: %s\n", v009 + 1, v012) ||
+            !fn_004(&v007, "Answer: %s\n\n", v013)) {
+            free(v013);
+            free(v007.v001);
+            return 2;
+        }
+
+        ++v006->v002;
+        free(v013);
+    }
+
+    v006->v001 = fn_009(v001->v001, &v007);
+    free(v007.v001);
+
+    return v006->v001 ? 0 : 2;
+}
+
+/* Collect unique placeholders written as {{id}}. */
+static int fn_011(const char *v001, char v002[][128], int v003)
+{
+    int v004 = 0;
+    const char *v005;
+
+    if (!v001 || !v002 || v003 <= 0) return 0;
+
+    v005 = v001;
+    while ((v005 = strstr(v005, "{{")) != NULL) {
+        const char *v006 = strstr(v005 + 2, "}}");
+        char v007[128];
+        size_t v008;
+        int v009 = 0;
+
+        if (!v006) break;
+
+        v008 = (size_t)(v006 - (v005 + 2));
+        if (v008 >= sizeof(v007)) v008 = sizeof(v007) - 1;
+
+        memcpy(v007, v005 + 2, v008);
+        v007[v008] = '\0';
+        fn_002(v007);
+
+        if (v007[0]) {
+            for (int v010 = 0; v010 < v004; ++v010) {
+                if (strcmp(v002[v010], v007) == 0) {
+                    v009 = 1;
+                    break;
+                }
+            }
+
+            if (!v009 && v004 < v003) {
+                snprintf(v002[v004], 128, "%s", v007);
+                ++v004;
+            }
+        }
+
+        v005 = v006 + 2;
+    }
+
+    return v004;
+}
+
+/* Return true if a structured spec declares a matching editable parameter. */
+static int fn_012(const char *v001, const char *v002)
+{
+    char v003[256];
+    char v004[256];
+
+    if (!v001 || !v002 || !v002[0]) return 0;
+
+    snprintf(v003, sizeof(v003), "SCALAR: %s:", v002);
+    snprintf(v004, sizeof(v004), "STRING: %s:", v002);
+
+    return (strstr(v001, v003) != NULL || strstr(v001, v004) != NULL) ? 1 : 0;
+}
+
+/* Validate that every {{id}} placeholder has an explicit parameter declaration. */
+static T006 fn_013(const char *v001)
+{
+    T006 v002;
+    char v003[C004][128];
+    int v004;
+    int v005 = 0;
+
+    memset(&v002, 0, sizeof(v002));
+    v002.v001 = 1;
+
+    if (!v001 || !v001[0]) return v002;
+
+    v004 = fn_011(v001, v003, C004);
+    if (v004 <= 0) return v002;
+
+    for (int v006 = 0; v006 < v004; ++v006) {
+        if (!fn_012(v001, v003[v006])) {
+            size_t v007;
+            v002.v001 = 0;
+            ++v005;
+
+            v007 = strlen(v002.v002);
+            if (v007 + 4 < sizeof(v002.v002)) {
+                if (v007 > 0) {
+                    strncat(v002.v002, ", ", sizeof(v002.v002) - strlen(v002.v002) - 1);
+                }
+                strncat(v002.v002, v003[v006], sizeof(v002.v002) - strlen(v002.v002) - 1);
+            }
+        }
+    }
+
+    (void)v005;
+    return v002;
+}
+
+/* Release clarification output. */
+static void fn_014(T005 *v001)
+{
+    if (!v001) return;
+    if (v001->v001) free(v001->v001);
+    memset(v001, 0, sizeof(*v001));
+}

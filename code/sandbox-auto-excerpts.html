@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SANDBOX_AUTO Cleaner + Execution Layer — Daniil Perederii</title>
+  <meta name="description" content="NDA-safe code excerpt for Daniil Perederii portfolio." />
+  <style>
+    :root {
+      --bg: #060606;
+      --panel: #101010;
+      --panel-2: #151515;
+      --text: #f2f2f2;
+      --muted: rgba(242,242,242,.72);
+      --line: rgba(255,255,255,.14);
+      --accent: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top left, rgba(255,255,255,.08), transparent 32rem), var(--bg);
+      color: var(--text);
+      font-family: "DM Sans", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+    a { color: inherit; }
+    .wrap { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 38px 0 60px; }
+    .top { display:flex; justify-content:space-between; gap:16px; align-items:center; margin-bottom: 28px; }
+    .back {
+      display:inline-flex; align-items:center; gap:8px; text-decoration:none;
+      border: 1px solid var(--line); padding: 10px 14px; border-radius: 999px;
+      background: rgba(255,255,255,.04); color: var(--muted); font-size: 14px;
+    }
+    .actions { display:flex; gap:10px; flex-wrap:wrap; }
+    .btn {
+      display:inline-flex; align-items:center; justify-content:center; text-decoration:none;
+      border: 1px solid var(--line); border-radius: 999px; padding: 10px 14px;
+      background: #fff; color:#050505; font-weight: 700; font-size: 14px; cursor:pointer;
+    }
+    .btn.secondary { background: rgba(255,255,255,.04); color: var(--text); font-weight: 600; }
+    h1 { margin: 0 0 10px; font-size: clamp(32px, 5vw, 58px); line-height: 1.02; letter-spacing: -.04em; }
+    .subtitle { color: var(--muted); font-size: 17px; max-width: 900px; margin: 0 0 20px; }
+    .note {
+      border: 1px solid var(--line); background: rgba(255,255,255,.05); border-radius: 18px;
+      padding: 18px; margin: 24px 0; color: var(--muted);
+    }
+    .note strong { color: var(--text); }
+    .code-panel {
+      border: 1px solid var(--line); border-radius: 18px; overflow: hidden;
+      background: var(--panel); box-shadow: 0 18px 55px rgba(0,0,0,.42);
+    }
+    .code-head {
+      display:flex; justify-content:space-between; gap:16px; align-items:center;
+      padding: 14px 18px; background: var(--panel-2); border-bottom: 1px solid var(--line);
+      color: var(--muted); font-size: 13px;
+    }
+    pre { margin: 0; overflow:auto; padding: 22px; font-size: 13px; line-height: 1.55; tab-size: 4; }
+    code { font-family: Consolas, "JetBrains Mono", "SFMono-Regular", Menlo, monospace; color: #f2f2f2; }
+    .foot { margin-top: 18px; color: var(--muted); font-size: 13px; }
+    @media (max-width: 720px) { .top { align-items:flex-start; flex-direction:column; } pre { font-size: 12px; } }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="top">
+      <a class="back" href="../index.html#demo">← Back to portfolio</a>
+      <div class="actions">
+        <button class="btn secondary" type="button" onclick="copyCode()">Copy code</button>
+        <a class="btn" href="raw/SANDBOX_AUTO_Cleaner_Execution_NDA_Portfolio_Excerpt.txt" download>Download .txt</a>
+      </div>
+    </div>
+
+    <h1>SANDBOX_AUTO Cleaner + Execution Layer</h1>
+    <p class="subtitle">Approved C99 portfolio excerpt showing syntax-aware cleaner logic, candidate normalization, execution/probe orchestration, and evidence recording.</p>
+
+    <div class="note">
+      <strong>NDA-safe excerpt:</strong> This excerpt shows the Cleaner and Execution layer only. Atomizer, Tagger, Extractor, database code, production skeleton registry, local project headers, and concrete sandbox backend binding are excluded.
+    </div>
+
+    <section class="code-panel">
+      <div class="code-head">
+        <span>SANDBOX_AUTO_Cleaner_Execution_NDA_Portfolio_Excerpt.txt</span>
+        <span>C99 excerpt</span>
+      </div>
+      <pre><code id="code-block">/*
+    Portfolio excerpt: SANDBOX_AUTO Cleaner + Execution layer
+    NDA-safe version.
+
+    Boundary used for this excerpt:
+    - Shows the cleaner pipeline and execution/probe orchestration only.
+    - Atomizer, tagger, extractor, database code, production skeleton registry,
+      local project headers, and concrete sandbox backend binding are excluded.
+    - All function names, type names, field names, and local variables are replaced
+      with ID labels.
+
+    What this demonstrates:
+    1) Cleaner normalizes candidate code before validation.
+    2) Comment removal is syntax-aware and preserves quoted strings.
+    3) Execution records compile/run evidence rather than accepting code blindly.
+    4) The layer can run through an injected backend without exposing the backend.
+*/
+
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;ctype.h&gt;
+#include &lt;time.h&gt;
+
+#define C001 0
+#define C002 1
+#define C003 2
+#define C004 4096
+#define C005 1024
+
+/* Cleaner input. */
+typedef struct T001 {
+    const char *v001;  /* source text */
+    const char *v002;  /* syntax label */
+} T001;
+
+/* Cleaner output. */
+typedef struct T002 {
+    char *v001;  /* cleaned text */
+    char *v002;  /* notes json */
+    int   v003;  /* changed flag */
+} T002;
+
+/* Execution input. */
+typedef struct T003 {
+    const char *v001;  /* syntax label */
+    const char *v002;  /* source origin label */
+    int         v003;  /* timeout budget */
+} T003;
+
+/* Optional execution target. */
+typedef struct T004 {
+    const char *v001;  /* target id */
+    const char *v002;  /* target kind */
+    const char *v003;  /* target code */
+    const char *v004;  /* optional probe template */
+    int         v005;  /* compile-only gate */
+} T004;
+
+/* Backend result. */
+typedef struct T005 {
+    int  v001;          /* compiled */
+    int  v002;          /* executed */
+    int  v003;          /* exit code */
+    char v004[C004];    /* compile log */
+    char v005[C004];    /* stdout */
+    char v006[C004];    /* stderr */
+} T005;
+
+/* Probe result. */
+typedef struct T006 {
+    char *v001;  /* probe id */
+    char *v002;  /* probe label */
+    char *v003;  /* probe code */
+    char *v004;  /* compile log */
+    char *v005;  /* stdout */
+    char *v006;  /* stderr */
+    char *v007;  /* behavior summary */
+    char *v008;  /* evidence json */
+    int   v009;  /* compiled */
+    int   v010;  /* executed */
+    int   v011;  /* exit code */
+    int   v012;  /* passed */
+    int   v013;  /* compile-only gate */
+    int   v014;  /* timeout before start */
+    int   v015;  /* timeout after finish */
+    long  v016;  /* duration */
+} T006;
+
+/* Execution output. */
+typedef struct T007 {
+    int    v001;  /* mode */
+    T006  *v002;  /* probes */
+    int    v003;  /* probe count */
+    int    v004;  /* all passed */
+    int    v005;  /* any executed */
+    int    v006;  /* timed out */
+    char  *v007;  /* summary json */
+} T007;
+
+/* Backend callback. The concrete compile/run implementation is outside this excerpt. */
+typedef int (*T008)(const char *v001,
+                    const char *v002,
+                    const char *v003,
+                    int v004,
+                    T005 *v005,
+                    void *v006);
+
+/* Duplicate string with empty fallback. */
+static char *fn_001(const char *v001)
+{
+    size_t v002;
+    char *v003;
+
+    if (!v001) v001 = &quot;&quot;;
+    v002 = strlen(v001);
+
+    v003 = (char*)malloc(v002 + 1);
+    if (!v003) return NULL;
+
+    memcpy(v003, v001, v002 + 1);
+    return v003;
+}
+
+/* Case-insensitive equality for ASCII labels. */
+static int fn_002(const char *v001, const char *v002)
+{
+    unsigned char v003;
+    unsigned char v004;
+
+    if (!v001 || !v002) return 0;
+
+    while (*v001 &amp;&amp; *v002) {
+        v003 = (unsigned char)*v001++;
+        v004 = (unsigned char)*v002++;
+        if ((unsigned char)tolower(v003) != (unsigned char)tolower(v004)) {
+            return 0;
+        }
+    }
+
+    return (*v001 == &#x27;\0&#x27; &amp;&amp; *v002 == &#x27;\0&#x27;) ? 1 : 0;
+}
+
+/* Check if text contains any marker from a null-terminated list. */
+static int fn_003(const char *v001, const char *const *v002)
+{
+    int v003;
+
+    if (!v001 || !v002) return 0;
+
+    for (v003 = 0; v002[v003]; ++v003) {
+        if (strstr(v001, v002[v003]) != NULL) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* Normalize line endings to &#x27;\n&#x27;. */
+static char *fn_004(const char *v001)
+{
+    size_t v002;
+    size_t v003;
+    size_t v004;
+    char *v005;
+
+    if (!v001) return NULL;
+
+    v002 = strlen(v001);
+    v005 = (char*)malloc(v002 + 1);
+    if (!v005) return NULL;
+
+    v004 = 0;
+    for (v003 = 0; v003 &lt; v002; ++v003) {
+        if (v001[v003] == &#x27;\r&#x27;) {
+            v005[v004++] = &#x27;\n&#x27;;
+            if ((v003 + 1) &lt; v002 &amp;&amp; v001[v003 + 1] == &#x27;\n&#x27;) {
+                ++v003;
+            }
+        } else {
+            v005[v004++] = v001[v003];
+        }
+    }
+
+    v005[v004] = &#x27;\0&#x27;;
+    return v005;
+}
+
+/* Map C trigraph third character to the real character. */
+static int fn_005(char v001, char *v002)
+{
+    if (!v002) return 0;
+
+    switch (v001) {
+        case &#x27;=&#x27;: *v002 = &#x27;#&#x27;; return 1;
+        case &#x27;/&#x27;: *v002 = &#x27;\\&#x27;; return 1;
+        case &#x27;\&#x27;&#x27;: *v002 = &#x27;^&#x27;; return 1;
+        case &#x27;(&#x27;: *v002 = &#x27;[&#x27;; return 1;
+        case &#x27;)&#x27;: *v002 = &#x27;]&#x27;; return 1;
+        case &#x27;!&#x27;: *v002 = &#x27;|&#x27;; return 1;
+        case &#x27;&lt;&#x27;: *v002 = &#x27;{&#x27;; return 1;
+        case &#x27;&gt;&#x27;: *v002 = &#x27;}&#x27;; return 1;
+        case &#x27;-&#x27;: *v002 = &#x27;~&#x27;; return 1;
+        default: return 0;
+    }
+}
+
+/* Expand C trigraphs. */
+static char *fn_006(const char *v001)
+{
+    size_t v002;
+    size_t v003;
+    size_t v004;
+    char *v005;
+
+    if (!v001) return NULL;
+
+    v002 = strlen(v001);
+    v005 = (char*)malloc(v002 + 1);
+    if (!v005) return NULL;
+
+    v004 = 0;
+    for (v003 = 0; v003 &lt; v002; ++v003) {
+        if ((v003 + 2) &lt; v002 &amp;&amp; v001[v003] == &#x27;?&#x27; &amp;&amp; v001[v003 + 1] == &#x27;?&#x27;) {
+            char v006 = &#x27;\0&#x27;;
+            if (fn_005(v001[v003 + 2], &amp;v006)) {
+                v005[v004++] = v006;
+                v003 += 2;
+                continue;
+            }
+        }
+        v005[v004++] = v001[v003];
+    }
+
+    v005[v004] = &#x27;\0&#x27;;
+    return v005;
+}
+
+/* Expand C digraphs. */
+static char *fn_007(const char *v001)
+{
+    size_t v002;
+    size_t v003;
+    size_t v004;
+    char *v005;
+
+    if (!v001) return NULL;
+
+    v002 = strlen(v001);
+    v005 = (char*)malloc(v002 + 1);
+    if (!v005) return NULL;
+
+    v004 = 0;
+    for (v003 = 0; v003 &lt; v002; ++v003) {
+        if ((v003 + 1) &lt; v002) {
+            if (v001[v003] == &#x27;&lt;&#x27; &amp;&amp; v001[v003 + 1] == &#x27;%&#x27;) { v005[v004++] = &#x27;{&#x27;; ++v003; continue; }
+            if (v001[v003] == &#x27;%&#x27; &amp;&amp; v001[v003 + 1] == &#x27;&gt;&#x27;) { v005[v004++] = &#x27;}&#x27;; ++v003; continue; }
+            if (v001[v003] == &#x27;&lt;&#x27; &amp;&amp; v001[v003 + 1] == &#x27;:&#x27;) { v005[v004++] = &#x27;[&#x27;; ++v003; continue; }
+            if (v001[v003] == &#x27;:&#x27; &amp;&amp; v001[v003 + 1] == &#x27;&gt;&#x27;) { v005[v004++] = &#x27;]&#x27;; ++v003; continue; }
+
+            if (v001[v003] == &#x27;%&#x27; &amp;&amp; v001[v003 + 1] == &#x27;:&#x27;) {
+                if ((v003 + 3) &lt; v002 &amp;&amp; v001[v003 + 2] == &#x27;%&#x27; &amp;&amp; v001[v003 + 3] == &#x27;:&#x27;) {
+                    v005[v004++] = &#x27;#&#x27;;
+                    v005[v004++] = &#x27;#&#x27;;
+                    v003 += 3;
+                    continue;
+                }
+
+                v005[v004++] = &#x27;#&#x27;;
+                ++v003;
+                continue;
+            }
+        }
+
+        v005[v004++] = v001[v003];
+    }
+
+    v005[v004] = &#x27;\0&#x27;;
+    return v005;
+}
+
+/* Remove C backslash-newline continuations, allowing whitespace before newline. */
+static char *fn_008(const char *v001)
+{
+    size_t v002;
+    size_t v003;
+    size_t v004;
+    char *v005;
+
+    if (!v001) return NULL;
+
+    v002 = strlen(v001);
+    v005 = (char*)malloc(v002 + 1);
+    if (!v005) return NULL;
+
+    v004 = 0;
+    for (v003 = 0; v003 &lt; v002; ++v003) {
+        if (v001[v003] == &#x27;\\&#x27;) {
+            size_t v006 = v003 + 1;
+            while (v006 &lt; v002 &amp;&amp; (v001[v006] == &#x27; &#x27; || v001[v006] == &#x27;\t&#x27; || v001[v006] == &#x27;\v&#x27; || v001[v006] == &#x27;\f&#x27;)) {
+                ++v006;
+            }
+            if (v006 &lt; v002 &amp;&amp; v001[v006] == &#x27;\n&#x27;) {
+                v003 = v006;
+                continue;
+            }
+        }
+        v005[v004++] = v001[v003];
+    }
+
+    v005[v004] = &#x27;\0&#x27;;
+    return v005;
+}
+
+/* Remove strict backslash-newline continuations. */
+static char *fn_009(const char *v001)
+{
+    size_t v002;
+    size_t v003;
+    size_t v004;
+    char *v005;
+
+    if (!v001) return NULL;
+
+    v002 = strlen(v001);
+    v005 = (char*)malloc(v002 + 1);
+    if (!v005) return NULL;
+
+    v004 = 0;
+    for (v003 = 0; v003 &lt; v002; ++v003) {
+        if (v001[v003] == &#x27;\\&#x27; &amp;&amp; (v003 + 1) &lt; v002 &amp;&amp; v001[v003 + 1] == &#x27;\n&#x27;) {
+            ++v003;
+            continue;
+        }
+        v005[v004++] = v001[v003];
+    }
+
+    v005[v004] = &#x27;\0&#x27;;
+    return v005;
+}
+
+/* Strip C comments while preserving quoted strings and character literals. */
+static char *fn_010(const char *v001)
+{
+    size_t v002;
+    size_t v003;
+    size_t v004;
+    char *v005;
+    int v006 = 0;
+    int v007 = 0;
+    int v008 = 0;
+    char v009 = &#x27;\0&#x27;;
+    int v010 = 0;
+
+    if (!v001) return NULL;
+
+    v002 = strlen(v001);
+    v005 = (char*)malloc(v002 + 1);
+    if (!v005) return NULL;
+
+    v004 = 0;
+    for (v003 = 0; v003 &lt; v002; ++v003) {
+        char v011 = v001[v003];
+        char v012 = ((v003 + 1) &lt; v002) ? v001[v003 + 1] : &#x27;\0&#x27;;
+
+        if (v006) {
+            if (v011 == &#x27;\n&#x27;) {
+                v005[v004++] = &#x27;\n&#x27;;
+                v006 = 0;
+            }
+            continue;
+        }
+
+        if (v007 &gt; 0) {
+            if (v011 == &#x27;/&#x27; &amp;&amp; v012 == &#x27;*&#x27;) { ++v007; ++v003; continue; }
+            if (v011 == &#x27;*&#x27; &amp;&amp; v012 == &#x27;/&#x27;) {
+                --v007;
+                ++v003;
+                if (v007 == 0 &amp;&amp; !v008) {
+                    if (v004 &gt; 0 &amp;&amp; v005[v004 - 1] != &#x27; &#x27; &amp;&amp; v005[v004 - 1] != &#x27;\t&#x27; &amp;&amp; v005[v004 - 1] != &#x27;\n&#x27;) {
+                        v005[v004++] = &#x27; &#x27;;
+                    }
+                }
+                continue;
+            }
+            if (v011 == &#x27;\n&#x27;) {
+                v005[v004++] = &#x27;\n&#x27;;
+                v008 = 1;
+            }
+            continue;
+        }
+
+        if (v009 != &#x27;\0&#x27;) {
+            v005[v004++] = v011;
+            if (v010) v010 = 0;
+            else if (v011 == &#x27;\\&#x27;) v010 = 1;
+            else if (v011 == v009) v009 = &#x27;\0&#x27;;
+            continue;
+        }
+
+        if (v011 == &#x27;&quot;&#x27; || v011 == &#x27;\&#x27;&#x27;) {
+            v005[v004++] = v011;
+            v009 = v011;
+            v010 = 0;
+            continue;
+        }
+
+        if (v011 == &#x27;/&#x27; &amp;&amp; v012 == &#x27;/&#x27;) { v006 = 1; ++v003; continue; }
+        if (v011 == &#x27;/&#x27; &amp;&amp; v012 == &#x27;*&#x27;) { v007 = 1; v008 = 0; ++v003; continue; }
+
+        v005[v004++] = v011;
+    }
+
+    v005[v004] = &#x27;\0&#x27;;
+    return v005;
+}
+
+/* Strip semicolon comments for assembly-like input while preserving quoted strings. */
+static char *fn_011(const char *v001)
+{
+    size_t v002;
+    size_t v003;
+    size_t v004;
+    char *v005;
+    char v006 = &#x27;\0&#x27;;
+    int v007 = 0;
+
+    if (!v001) return NULL;
+
+    v002 = strlen(v001);
+    v005 = (char*)malloc(v002 + 1);
+    if (!v005) return NULL;
+
+    v004 = 0;
+    for (v003 = 0; v003 &lt; v002; ++v003) {
+        char v008 = v001[v003];
+
+        if (v006 != &#x27;\0&#x27;) {
+            v005[v004++] = v008;
+            if (v006 == &#x27;`&#x27;) {
+                if (v007) v007 = 0;
+                else if (v008 == &#x27;\\&#x27;) v007 = 1;
+                else if (v008 == &#x27;`&#x27;) v006 = &#x27;\0&#x27;;
+            } else if (v008 == v006) {
+                v006 = &#x27;\0&#x27;;
+            }
+            continue;
+        }
+
+        if (v008 == &#x27;&quot;&#x27; || v008 == &#x27;\&#x27;&#x27; || v008 == &#x27;`&#x27;) {
+            v005[v004++] = v008;
+            v006 = v008;
+            v007 = 0;
+            continue;
+        }
+
+        if (v008 == &#x27;;&#x27;) {
+            while (v003 &lt; v002 &amp;&amp; v001[v003] != &#x27;\n&#x27;) ++v003;
+            if (v003 &lt; v002 &amp;&amp; v001[v003] == &#x27;\n&#x27;) v005[v004++] = &#x27;\n&#x27;;
+            continue;
+        }
+
+        v005[v004++] = v008;
+    }
+
+    v005[v004] = &#x27;\0&#x27;;
+    return v005;
+}
+
+/* Build cleaner notes. */
+static char *fn_012(const char *v001, const char *v002)
+{
+    char v003[1024];
+
+    if (fn_002(v001, &quot;C&quot;)) {
+        static const char *v004[] = {
+            &quot;#include \&quot;autoconf.h\&quot;&quot;,
+            &quot;HAVE_CONFIG_H&quot;,
+            NULL
+        };
+        static const char *v005[] = {
+            &quot;#include &lt;unistd.h&gt;&quot;,
+            &quot;#include &lt;dirent.h&gt;&quot;,
+            &quot;#include &lt;sys/&quot;,
+            NULL
+        };
+        static const char *v006[] = {
+            &quot;#include &lt;glib.h&gt;&quot;,
+            &quot;#include &lt;canberra.h&gt;&quot;,
+            NULL
+        };
+
+        int v007 = fn_003(v002, v004);
+        int v008 = fn_003(v002, v005);
+        int v009 = fn_003(v002, v006);
+        int v010 = (v007 || v008 || v009) ? 0 : 1;
+
+        snprintf(v003, sizeof(v003),
+            &quot;{\&quot;syntax\&quot;:\&quot;C\&quot;,\&quot;standalone_baseline\&quot;:%d,&quot;
+            &quot;\&quot;has_build_dependency\&quot;:%d,\&quot;has_platform_dependency\&quot;:%d,&quot;
+            &quot;\&quot;has_external_dependency\&quot;:%d}&quot;,
+            v010, v007, v008, v009);
+        return fn_001(v003);
+    }
+
+    if (fn_002(v001, &quot;NASM&quot;)) {
+        return fn_001(&quot;{\&quot;syntax\&quot;:\&quot;ASM\&quot;,\&quot;removed\&quot;:[\&quot;continuation\&quot;,\&quot;comment\&quot;,\&quot;extra_spacing\&quot;]}&quot;);
+    }
+
+    return fn_001(&quot;{\&quot;syntax\&quot;:\&quot;GENERIC\&quot;,\&quot;removed\&quot;:[\&quot;line_endings\&quot;,\&quot;extra_spacing\&quot;]}&quot;);
+}
+
+/* Cleaner stage: syntax-aware normalization and comment stripping. */
+static int fn_013(const T001 *v001, T002 *v002)
+{
+    char *v003 = NULL;
+    char *v004 = NULL;
+    char *v005 = NULL;
+    char *v006 = NULL;
+    char *v007 = NULL;
+
+    if (!v001 || !v002 || !v001-&gt;v001) return 1;
+    memset(v002, 0, sizeof(*v002));
+
+    v003 = fn_004(v001-&gt;v001);
+    if (!v003) return 2;
+
+    if (fn_002(v001-&gt;v002, &quot;C&quot;)) {
+        v004 = fn_006(v003);
+        if (!v004) goto v_fail;
+
+        v005 = fn_007(v004);
+        free(v004);
+        v004 = NULL;
+        if (!v005) goto v_fail;
+
+        v006 = fn_008(v005);
+        free(v005);
+        v005 = NULL;
+        if (!v006) goto v_fail;
+
+        v007 = fn_010(v006);
+    } else if (fn_002(v001-&gt;v002, &quot;NASM&quot;)) {
+        v006 = fn_009(v003);
+        if (!v006) goto v_fail;
+
+        v007 = fn_011(v006);
+    } else {
+        v006 = fn_001(v003);
+        if (!v006) goto v_fail;
+        v007 = fn_001(v006);
+    }
+
+    if (!v007) goto v_fail;
+
+    v002-&gt;v001 = v007;
+    v007 = NULL;
+    v002-&gt;v002 = fn_012(v001-&gt;v002, v002-&gt;v001);
+    if (!v002-&gt;v002) goto v_fail;
+
+    v002-&gt;v003 = (strcmp(v001-&gt;v001, v002-&gt;v001) != 0) ? 1 : 0;
+
+    free(v003);
+    free(v006);
+    return 0;
+
+v_fail:
+    free(v003);
+    free(v004);
+    free(v005);
+    free(v006);
+    free(v007);
+    if (v002-&gt;v001) free(v002-&gt;v001);
+    if (v002-&gt;v002) free(v002-&gt;v002);
+    memset(v002, 0, sizeof(*v002));
+    return 2;
+}
+
+/* Free cleaner output. */
+static void fn_014(T002 *v001)
+{
+    if (!v001) return;
+    if (v001-&gt;v001) free(v001-&gt;v001);
+    if (v001-&gt;v002) free(v001-&gt;v002);
+    memset(v001, 0, sizeof(*v001));
+}
+
+/* Current time in milliseconds, approximate and portable for excerpt use. */
+static long fn_015(void)
+{
+    return (long)((double)clock() * 1000.0 / (double)CLOCKS_PER_SEC);
+}
+
+/* Free one probe. */
+static void fn_016(T006 *v001)
+{
+    if (!v001) return;
+    if (v001-&gt;v001) free(v001-&gt;v001);
+    if (v001-&gt;v002) free(v001-&gt;v002);
+    if (v001-&gt;v003) free(v001-&gt;v003);
+    if (v001-&gt;v004) free(v001-&gt;v004);
+    if (v001-&gt;v005) free(v001-&gt;v005);
+    if (v001-&gt;v006) free(v001-&gt;v006);
+    if (v001-&gt;v007) free(v001-&gt;v007);
+    if (v001-&gt;v008) free(v001-&gt;v008);
+    memset(v001, 0, sizeof(*v001));
+}
+
+/* Free execution output. */
+static void fn_017(T007 *v001)
+{
+    int v002;
+
+    if (!v001) return;
+
+    if (v001-&gt;v002) {
+        for (v002 = 0; v002 &lt; v001-&gt;v003; ++v002) {
+            fn_016(&amp;v001-&gt;v002[v002]);
+        }
+        free(v001-&gt;v002);
+    }
+
+    if (v001-&gt;v007) free(v001-&gt;v007);
+    memset(v001, 0, sizeof(*v001));
+}
+
+/* Sanitize an arbitrary label into an ID-safe label. */
+static void fn_018(const char *v001, char *v002, size_t v003)
+{
+    size_t v004;
+    size_t v005;
+
+    if (!v002 || v003 == 0) return;
+    v002[0] = &#x27;\0&#x27;;
+
+    if (!v001 || !v001[0]) return;
+
+    v005 = 0;
+    for (v004 = 0; v001[v004] &amp;&amp; (v005 + 1) &lt; v003; ++v004) {
+        unsigned char v006 = (unsigned char)v001[v004];
+        if (isalnum(v006)) v002[v005++] = (char)v006;
+        else v002[v005++] = &#x27;_&#x27;;
+    }
+
+    v002[v005] = &#x27;\0&#x27;;
+}
+
+/* Replace one marker occurrence with insertion text. */
+static char *fn_019(const char *v001, const char *v002, const char *v003)
+{
+    const char *v004;
+    size_t v005;
+    size_t v006;
+    size_t v007;
+    size_t v008;
+    char *v009;
+
+    if (!v001 || !v002 || !v002[0] || !v003) return NULL;
+
+    v004 = strstr(v001, v002);
+    if (!v004) return NULL;
+
+    v005 = (size_t)(v004 - v001);
+    v006 = strlen(v002);
+    v007 = strlen(v003);
+    v008 = strlen(v004 + v006);
+
+    v009 = (char*)malloc(v005 + v007 + v008 + 1);
+    if (!v009) return NULL;
+
+    memcpy(v009, v001, v005);
+    memcpy(v009 + v005, v003, v007);
+    memcpy(v009 + v005 + v007, v004 + v006, v008);
+    v009[v005 + v007 + v008] = &#x27;\0&#x27;;
+
+    return v009;
+}
+
+/* Build probe source from a two-marker template. */
+static char *fn_020(const char *v001,
+                    const char *v002,
+                    const char *v003,
+                    const char *v004,
+                    const char *v005)
+{
+    char *v006;
+    char *v007;
+
+    if (!v001 || !v002 || !v003 || !v004) return NULL;
+    if (!strstr(v001, v002) || !strstr(v001, v003)) return NULL;
+
+    v006 = fn_019(v001, v002, v004);
+    if (!v006) return NULL;
+
+    v007 = fn_019(v006, v003, v005 ? v005 : &quot;&quot;);
+    free(v006);
+
+    return v007;
+}
+
+/* Choose which code is used for a probe. */
+static int fn_021(int v001, const T002 *v002, const T004 *v003, const char **v004)
+{
+    if (!v002 || !v004) return 1;
+
+    *v004 = NULL;
+
+    if (v001 == C001) {
+        *v004 = v002-&gt;v001;
+    } else if (v001 == C002) {
+        if (!v003 || !v003-&gt;v003 || !v003-&gt;v003[0]) return 1;
+        *v004 = v003-&gt;v003;
+    } else {
+        return 1;
+    }
+
+    return (*v004 &amp;&amp; (*v004)[0]) ? 0 : 1;
+}
+
+/* Build a short behavior summary. */
+static char *fn_022(const char *v001, const T005 *v002, int v003, int v004, long v005)
+{
+    char v006[1024];
+
+    if (!v002) return NULL;
+
+    snprintf(v006, sizeof(v006),
+        &quot;syntax=%s compiled=%d executed=%d exit_code=%d compile_only=%d timeout=%d duration_ms=%ld&quot;,
+        v001 ? v001 : &quot;&quot;,
+        v002-&gt;v001 ? 1 : 0,
+        v002-&gt;v002 ? 1 : 0,
+        v002-&gt;v003,
+        v003 ? 1 : 0,
+        v004 ? 1 : 0,
+        v005);
+
+    return fn_001(v006);
+}
+
+/* Build JSON evidence for one probe. */
+static char *fn_023(int v001, const T003 *v002, const T004 *v003, const T006 *v004)
+{
+    char v005[2048];
+
+    snprintf(v005, sizeof(v005),
+        &quot;{\&quot;mode\&quot;:%d,\&quot;syntax\&quot;:\&quot;%s\&quot;,\&quot;target_id\&quot;:\&quot;%s\&quot;,&quot;
+        &quot;\&quot;compiled\&quot;:%d,\&quot;executed\&quot;:%d,\&quot;passed\&quot;:%d,\&quot;exit_code\&quot;:%d}&quot;,
+        v001,
+        (v002 &amp;&amp; v002-&gt;v001) ? v002-&gt;v001 : &quot;&quot;,
+        (v003 &amp;&amp; v003-&gt;v001) ? v003-&gt;v001 : &quot;baseline&quot;,
+        (v004 &amp;&amp; v004-&gt;v009) ? 1 : 0,
+        (v004 &amp;&amp; v004-&gt;v010) ? 1 : 0,
+        (v004 &amp;&amp; v004-&gt;v012) ? 1 : 0,
+        v004 ? v004-&gt;v011 : 0);
+
+    return fn_001(v005);
+}
+
+/* Fill one probe by calling injected backend and preserving all evidence. */
+static int fn_024(int v001,
+                  const T003 *v002,
+                  const T004 *v003,
+                  const char *v004,
+                  T008 v005,
+                  void *v006,
+                  T006 *v007)
+{
+    T005 v008;
+    long v009;
+    long v010;
+    char v011[256];
+    int v012;
+
+    if (!v002 || !v004 || !v005 || !v007) return 1;
+    memset(&amp;v008, 0, sizeof(v008));
+    memset(v007, 0, sizeof(*v007));
+
+    if (v003 &amp;&amp; v003-&gt;v001 &amp;&amp; v003-&gt;v001[0]) {
+        fn_018(v003-&gt;v001, v011, sizeof(v011));
+        v007-&gt;v001 = fn_001(v011[0] ? v011 : &quot;probe&quot;);
+        v007-&gt;v002 = fn_001(v003-&gt;v002 ? v003-&gt;v002 : &quot;target&quot;);
+        v007-&gt;v013 = v003-&gt;v005 ? 1 : 0;
+    } else {
+        v007-&gt;v001 = fn_001(&quot;baseline&quot;);
+        v007-&gt;v002 = fn_001(&quot;baseline candidate&quot;);
+        v007-&gt;v013 = 0;
+    }
+
+    v007-&gt;v003 = fn_001(v004);
+    if (!v007-&gt;v001 || !v007-&gt;v002 || !v007-&gt;v003) goto v_oom;
+
+    v009 = fn_015();
+    v012 = v005(v004, v002-&gt;v001, v007-&gt;v001, v007-&gt;v013, &amp;v008, v006);
+    v010 = fn_015();
+
+    v007-&gt;v016 = v010 - v009;
+    v007-&gt;v009 = v008.v001 ? 1 : 0;
+    v007-&gt;v010 = v008.v002 ? 1 : 0;
+    v007-&gt;v011 = v008.v003;
+
+    if (v012 != 0) {
+        v007-&gt;v012 = 0;
+    } else if (v007-&gt;v013) {
+        v007-&gt;v012 = v007-&gt;v009 ? 1 : 0;
+    } else {
+        v007-&gt;v012 = (v007-&gt;v009 &amp;&amp; v007-&gt;v010) ? 1 : 0;
+    }
+
+    v007-&gt;v004 = fn_001(v008.v004);
+    v007-&gt;v005 = fn_001(v008.v005);
+    v007-&gt;v006 = fn_001(v008.v006);
+    v007-&gt;v007 = fn_022(v002-&gt;v001, &amp;v008, v007-&gt;v013, 0, v007-&gt;v016);
+    v007-&gt;v008 = fn_023(v001, v002, v003, v007);
+
+    if (!v007-&gt;v004 || !v007-&gt;v005 || !v007-&gt;v006 || !v007-&gt;v007 || !v007-&gt;v008) {
+        goto v_oom;
+    }
+
+    return 0;
+
+v_oom:
+    fn_016(v007);
+    return 2;
+}
+
+/* Build summary JSON for the execution output. */
+static char *fn_025(int v001, const T003 *v002, const T007 *v003)
+{
+    char v004[1024];
+
+    if (!v003) return NULL;
+
+    snprintf(v004, sizeof(v004),
+        &quot;{\&quot;mode\&quot;:%d,\&quot;syntax\&quot;:\&quot;%s\&quot;,\&quot;probe_count\&quot;:%d,&quot;
+        &quot;\&quot;all_passed\&quot;:%d,\&quot;any_executed\&quot;:%d,\&quot;timed_out\&quot;:%d}&quot;,
+        v001,
+        (v002 &amp;&amp; v002-&gt;v001) ? v002-&gt;v001 : &quot;&quot;,
+        v003-&gt;v003,
+        v003-&gt;v004 ? 1 : 0,
+        v003-&gt;v005 ? 1 : 0,
+        v003-&gt;v006 ? 1 : 0);
+
+    return fn_001(v004);
+}
+
+/* Execution stage: select candidate/probe code, run backend, and persist evidence in memory. */
+static int fn_026(int v001,
+                  const T003 *v002,
+                  const T002 *v003,
+                  const T004 *v004,
+                  T008 v005,
+                  void *v006,
+                  T007 *v007)
+{
+    const char *v008 = NULL;
+    int v009;
+
+    if (!v002 || !v003 || !v007 || !v005) return 1;
+
+    memset(v007, 0, sizeof(*v007));
+    v007-&gt;v001 = v001;
+
+    v009 = fn_021(v001, v003, v004, &amp;v008);
+    if (v009 != 0 || !v008 || !v008[0]) return 1;
+
+    v007-&gt;v003 = 1;
+    v007-&gt;v002 = (T006*)calloc(1, sizeof(T006));
+    if (!v007-&gt;v002) return 2;
+
+    v009 = fn_024(v001, v002, v004, v008, v005, v006, &amp;v007-&gt;v002[0]);
+    if (v009 != 0) {
+        fn_017(v007);
+        return v009;
+    }
+
+    v007-&gt;v004 = v007-&gt;v002[0].v012 ? 1 : 0;
+    v007-&gt;v005 = v007-&gt;v002[0].v010 ? 1 : 0;
+    v007-&gt;v006 = (v007-&gt;v002[0].v014 || v007-&gt;v002[0].v015) ? 1 : 0;
+    v007-&gt;v007 = fn_025(v001, v002, v007);
+
+    if (!v007-&gt;v007) {
+        fn_017(v007);
+        return 2;
+    }
+
+    return 0;
+}
+</code></pre>
+    </section>
+
+    <p class="foot">Function names, type names, field names, and local variables may be anonymized by design. Comments and control flow are preserved to make the engineering approach reviewable without exposing private details.</p>
+  </main>
+
+  <script>
+    function copyCode() {
+      const el = document.getElementById('code-block');
+      if (!el) return;
+      navigator.clipboard.writeText(el.innerText).then(() => {
+        const btn = document.querySelector('button');
+        if (btn) {
+          const old = btn.textContent;
+          btn.textContent = 'Copied';
+          setTimeout(() => btn.textContent = old, 1200);
+        }
+      });
+    }
+  </script>
+</body>
+</html>

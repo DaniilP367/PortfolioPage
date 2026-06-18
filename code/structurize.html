@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Structurize + Clarification — Daniil Perederii</title>
+  <meta name="description" content="NDA-safe code excerpt for Daniil Perederii portfolio." />
+  <style>
+    :root {
+      --bg: #060606;
+      --panel: #101010;
+      --panel-2: #151515;
+      --text: #f2f2f2;
+      --muted: rgba(242,242,242,.72);
+      --line: rgba(255,255,255,.14);
+      --accent: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top left, rgba(255,255,255,.08), transparent 32rem), var(--bg);
+      color: var(--text);
+      font-family: "DM Sans", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+    a { color: inherit; }
+    .wrap { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 38px 0 60px; }
+    .top { display:flex; justify-content:space-between; gap:16px; align-items:center; margin-bottom: 28px; }
+    .back {
+      display:inline-flex; align-items:center; gap:8px; text-decoration:none;
+      border: 1px solid var(--line); padding: 10px 14px; border-radius: 999px;
+      background: rgba(255,255,255,.04); color: var(--muted); font-size: 14px;
+    }
+    .actions { display:flex; gap:10px; flex-wrap:wrap; }
+    .btn {
+      display:inline-flex; align-items:center; justify-content:center; text-decoration:none;
+      border: 1px solid var(--line); border-radius: 999px; padding: 10px 14px;
+      background: #fff; color:#050505; font-weight: 700; font-size: 14px; cursor:pointer;
+    }
+    .btn.secondary { background: rgba(255,255,255,.04); color: var(--text); font-weight: 600; }
+    h1 { margin: 0 0 10px; font-size: clamp(32px, 5vw, 58px); line-height: 1.02; letter-spacing: -.04em; }
+    .subtitle { color: var(--muted); font-size: 17px; max-width: 900px; margin: 0 0 20px; }
+    .note {
+      border: 1px solid var(--line); background: rgba(255,255,255,.05); border-radius: 18px;
+      padding: 18px; margin: 24px 0; color: var(--muted);
+    }
+    .note strong { color: var(--text); }
+    .code-panel {
+      border: 1px solid var(--line); border-radius: 18px; overflow: hidden;
+      background: var(--panel); box-shadow: 0 18px 55px rgba(0,0,0,.42);
+    }
+    .code-head {
+      display:flex; justify-content:space-between; gap:16px; align-items:center;
+      padding: 14px 18px; background: var(--panel-2); border-bottom: 1px solid var(--line);
+      color: var(--muted); font-size: 13px;
+    }
+    pre { margin: 0; overflow:auto; padding: 22px; font-size: 13px; line-height: 1.55; tab-size: 4; }
+    code { font-family: Consolas, "JetBrains Mono", "SFMono-Regular", Menlo, monospace; color: #f2f2f2; }
+    .foot { margin-top: 18px; color: var(--muted); font-size: 13px; }
+    @media (max-width: 720px) { .top { align-items:flex-start; flex-direction:column; } pre { font-size: 12px; } }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="top">
+      <a class="back" href="../index.html#demo">← Back to portfolio</a>
+      <div class="actions">
+        <button class="btn secondary" type="button" onclick="copyCode()">Copy code</button>
+        <a class="btn" href="raw/Structurize_Clarification_NDA_Portfolio_Excerpt.txt" download>Download .txt</a>
+      </div>
+    </div>
+
+    <h1>Structurize + Clarification</h1>
+    <p class="subtitle">Approved C99 portfolio excerpt showing the clarification loop, prompt construction, answer accumulation, and structured-spec placeholder validation.</p>
+
+    <div class="note">
+      <strong>NDA-safe excerpt:</strong> This excerpt shows only the isolated Structurize + Clarification boundary. Direct model calls, database commits, command menu glue, and production implementation details are excluded.
+    </div>
+
+    <section class="code-panel">
+      <div class="code-head">
+        <span>Structurize_Clarification_NDA_Portfolio_Excerpt.txt</span>
+        <span>C99 excerpt</span>
+      </div>
+      <pre><code id="code-block">/*
+    Portfolio excerpt: Structurize + Clarification subsystem
+    NDA-safe version.
+
+    Boundary used for this excerpt:
+    - Shows the clarification loop, prompt construction, answer accumulation, and
+      structured-spec placeholder validation.
+    - All function names, type names, field names, and local variables are replaced
+      with ID labels.
+    - Direct model calls, database commits, command menu glue, and the production
+      Structurize implementation file are not included because they are outside
+      this excerpt boundary.
+
+    What this demonstrates:
+    1) The system does not guess missing task details.
+    2) It asks one focused question at a time.
+    3) It preserves user answers as evidence before later planning.
+    4) It rejects structured specs where editable placeholders do not have
+       corresponding parameter declarations.
+*/
+
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;ctype.h&gt;
+#include &lt;stdarg.h&gt;
+
+#define C001 64
+#define C002 1024
+#define C003 8192
+#define C004 256
+
+/* Callback that supplies one line of operator input. */
+typedef int (*T001)(char *v001, size_t v002, void *v003);
+
+/* Callback that supplies the next model response. The concrete model backend is outside this excerpt. */
+typedef int (*T002)(const char *v001, char *v002, size_t v003, void *v004);
+
+/* Clarification request. */
+typedef struct T003 {
+    const char *v001;  /* original task text */
+    const char *v002;  /* language / syntax hint */
+    int         v003;  /* privilege / environment hint */
+    int         v004;  /* debug flag */
+} T003;
+
+/* Growable text buffer. */
+typedef struct T004 {
+    char  *v001;
+    size_t v002;
+    size_t v003;
+} T004;
+
+/* Output of the clarification stage. */
+typedef struct T005 {
+    char *v001;  /* combined clarified description */
+    int   v002;  /* number of accepted answers */
+} T005;
+
+/* Structured-spec validation result. */
+typedef struct T006 {
+    int  v001;
+    char v002[1024];
+} T006;
+
+/* Duplicate a string with empty-string fallback. */
+static char *fn_001(const char *v001)
+{
+    size_t v002;
+    char *v003;
+
+    if (!v001) v001 = &quot;&quot;;
+    v002 = strlen(v001);
+
+    v003 = (char*)malloc(v002 + 1);
+    if (!v003) return NULL;
+
+    memcpy(v003, v001, v002 + 1);
+    return v003;
+}
+
+/* Trim outer whitespace in-place. */
+static void fn_002(char *v001)
+{
+    char *v002;
+    size_t v003;
+
+    if (!v001 || !v001[0]) return;
+
+    v002 = v001;
+    while (*v002 == &#x27; &#x27; || *v002 == &#x27;\t&#x27; || *v002 == &#x27;\r&#x27; || *v002 == &#x27;\n&#x27;) {
+        ++v002;
+    }
+
+    if (v002 != v001) {
+        memmove(v001, v002, strlen(v002) + 1);
+    }
+
+    v003 = strlen(v001);
+    while (v003 &gt; 0) {
+        char v004 = v001[v003 - 1];
+        if (v004 == &#x27; &#x27; || v004 == &#x27;\t&#x27; || v004 == &#x27;\r&#x27; || v004 == &#x27;\n&#x27;) {
+            v001[--v003] = &#x27;\0&#x27;;
+        } else {
+            break;
+        }
+    }
+}
+
+/* Detect whether UTF-8 text contains Cyrillic bytes. */
+static int fn_003(const char *v001)
+{
+    if (!v001) return 0;
+
+    while (*v001) {
+        unsigned char v002 = (unsigned char)*v001;
+        if (v002 &gt;= 0xD0 &amp;&amp; v002 &lt;= 0xD3) {
+            return 1;
+        }
+        ++v001;
+    }
+
+    return 0;
+}
+
+/* Append formatted text to a growable buffer. */
+static int fn_004(T004 *v001, const char *v002, ...)
+{
+    char v003[2048];
+    va_list v004;
+    int v005;
+    size_t v006;
+    char *v007;
+
+    if (!v001 || !v002) return 0;
+
+    va_start(v004, v002);
+    v005 = vsnprintf(v003, sizeof(v003), v002, v004);
+    va_end(v004);
+
+    if (v005 &lt; 0) return 0;
+    v006 = (size_t)v005;
+    if (v006 &gt;= sizeof(v003)) return 0;
+
+    if (!v001-&gt;v001) {
+        v001-&gt;v002 = v006 + 256;
+        v001-&gt;v001 = (char*)malloc(v001-&gt;v002);
+        if (!v001-&gt;v001) return 0;
+        v001-&gt;v001[0] = &#x27;\0&#x27;;
+        v001-&gt;v003 = 0;
+    }
+
+    if (v001-&gt;v003 + v006 + 1 &gt; v001-&gt;v002) {
+        size_t v008 = v001-&gt;v003 + v006 + 256;
+        v007 = (char*)realloc(v001-&gt;v001, v008);
+        if (!v007) return 0;
+        v001-&gt;v001 = v007;
+        v001-&gt;v002 = v008;
+    }
+
+    memcpy(v001-&gt;v001 + v001-&gt;v003, v003, v006 + 1);
+    v001-&gt;v003 += v006;
+    return 1;
+}
+
+/* Read multiline operator answer through an injected input callback. */
+static char *fn_005(T001 v001, void *v002)
+{
+    char v003[2048];
+    size_t v004 = 4096;
+    size_t v005 = 0;
+    char *v006;
+
+    if (!v001) return NULL;
+
+    v006 = (char*)malloc(v004);
+    if (!v006) return NULL;
+    v006[0] = &#x27;\0&#x27;;
+
+    for (;;) {
+        size_t v007;
+        char *v008;
+
+        if (!v001(v003, sizeof(v003), v002)) {
+            break;
+        }
+
+        if (v003[0] == &#x27;\0&#x27;) {
+            break;
+        }
+
+        v007 = strlen(v003);
+        if (v005 + v007 + 2 &gt; v004) {
+            v004 *= 2;
+            v008 = (char*)realloc(v006, v004);
+            if (!v008) {
+                free(v006);
+                return NULL;
+            }
+            v006 = v008;
+        }
+
+        memcpy(v006 + v005, v003, v007);
+        v005 += v007;
+        v006[v005++] = &#x27;\n&#x27;;
+        v006[v005] = &#x27;\0&#x27;;
+    }
+
+    return v006;
+}
+
+/* Build the next-question prompt. */
+static void fn_006(const T003 *v001,
+                   const char *v002,
+                   int v003,
+                   char *v004,
+                   size_t v005)
+{
+    const char *v006;
+    const char *v007;
+    const char *v008;
+    const char *v009;
+    const char *v010;
+    const char *v011;
+    const char *v012;
+
+    if (!v004 || v005 == 0) return;
+    if (!v001) {
+        v004[0] = &#x27;\0&#x27;;
+        return;
+    }
+
+    v006 = (v002 &amp;&amp; v002[0]) ? v002 : &quot;(no previous answers)&quot;;
+    v007 = (v001-&gt;v002 &amp;&amp; v001-&gt;v002[0]) ? v001-&gt;v002 : &quot;(no syntax hint)&quot;;
+
+    if (v003) {
+        v008 = &quot;Ask the next clarification question in Russian.&quot;;
+        v009 = &quot;On the first round, ask at least one question. Do not return &#x27;+&#x27;.&quot;;
+        v010 = &quot;When the task is fully specified, return only &#x27;+&#x27;.&quot;;
+    } else {
+        v008 = &quot;Ask the next clarification question in English.&quot;;
+        v009 = &quot;On the first round, ask at least one question. Do not return &#x27;+&#x27;.&quot;;
+        v010 = &quot;When the task is fully specified, return only &#x27;+&#x27;.&quot;;
+    }
+
+    if (v001-&gt;v003 &lt; 0) {
+        v011 =
+            &quot;Priority gate: clarify boot path, CPU mode, video output, input device, &quot;
+            &quot;delivery format, and memory/layout constraints before cosmetics.&quot;;
+    } else if (v001-&gt;v003 == 0) {
+        v011 =
+            &quot;Priority gate: clarify privilege model, kernel access path, allowed constraints, &quot;
+            &quot;and exact privileged operations before implementation details.&quot;;
+    } else {
+        v011 = &quot;Priority gate: normal user-mode task; clarify observable behavior and acceptance checks.&quot;;
+    }
+
+    v012 = (v002 &amp;&amp; v002[0]) ? v010 : v009;
+
+    snprintf(v004, v005,
+        &quot;%s\n&quot;
+        &quot;You are a clarification module for deterministic code assembly.\n&quot;
+        &quot;The goal is to collect missing facts before planning code fragments.\n\n&quot;
+        &quot;Original request:\n%s\n\n&quot;
+        &quot;Syntax hint: %s\n&quot;
+        &quot;Execution hint: %d\n\n&quot;
+        &quot;Previous Q/A:\n%s\n\n&quot;
+        &quot;%s\n&quot;
+        &quot;%s\n\n&quot;
+        &quot;Rules:\n&quot;
+        &quot;- Ask exactly one short question when information is missing.\n&quot;
+        &quot;- Return only &#x27;+&#x27; when all important details are known.\n&quot;
+        &quot;- Do not answer the task.\n&quot;
+        &quot;- Do not repeat previous questions.\n&quot;,
+        v011,
+        v001-&gt;v001 ? v001-&gt;v001 : &quot;&quot;,
+        v007,
+        v001-&gt;v003,
+        v006,
+        v008,
+        v012);
+}
+
+/* Extract one question from a model response. */
+static void fn_007(const char *v001, char *v002, size_t v003)
+{
+    const char *v004 = NULL;
+    const char *v005 = NULL;
+    const char *v006;
+    size_t v007;
+
+    if (!v002 || v003 == 0) return;
+    v002[0] = &#x27;\0&#x27;;
+
+    if (!v001 || !v001[0]) return;
+
+    v006 = v001;
+    for (const char *v008 = v001; *v008; ++v008) {
+        if (*v008 == &#x27;\n&#x27;) {
+            v006 = v008 + 1;
+            continue;
+        }
+        if (*v008 == &#x27;?&#x27;) {
+            v004 = v008;
+            v005 = v006;
+            break;
+        }
+    }
+
+    if (!v004 || !v005) {
+        strncpy(v002, v001, v003 - 1);
+        v002[v003 - 1] = &#x27;\0&#x27;;
+        fn_002(v002);
+        return;
+    }
+
+    v007 = (size_t)(v004 - v005 + 1);
+    if (v007 &gt;= v003) v007 = v003 - 1;
+
+    memcpy(v002, v005, v007);
+    v002[v007] = &#x27;\0&#x27;;
+    fn_002(v002);
+
+    if (!strncmp(v002, &quot;Question&quot;, 8) || !strncmp(v002, &quot;Вопрос&quot;, 6)) {
+        char *v009 = strchr(v002, &#x27;:&#x27;);
+        if (v009) {
+            memmove(v002, v009 + 1, strlen(v009 + 1) + 1);
+            fn_002(v002);
+        }
+    }
+}
+
+/* Normalize a plus marker or a prefixed plus marker. */
+static int fn_008(char *v001)
+{
+    size_t v002;
+
+    if (!v001) return 0;
+    fn_002(v001);
+
+    if (v001[0] != &#x27;+&#x27;) return 0;
+
+    v002 = 1;
+    while (v001[v002] == &#x27; &#x27; || v001[v002] == &#x27;\t&#x27; || v001[v002] == &#x27;\r&#x27; || v001[v002] == &#x27;\n&#x27;) {
+        ++v002;
+    }
+
+    if (v001[v002] == &#x27;\0&#x27;) {
+        v001[0] = &#x27;\0&#x27;;
+        return 1;
+    }
+
+    memmove(v001, v001 + v002, strlen(v001 + v002) + 1);
+    fn_002(v001);
+    return 0;
+}
+
+/* Build final clarified text from original request and Q/A evidence. */
+static char *fn_009(const char *v001, const T004 *v002)
+{
+    T004 v003;
+    char *v004;
+
+    memset(&amp;v003, 0, sizeof(v003));
+
+    if (!fn_004(&amp;v003, &quot;Original request:\n%s\n\n&quot;, v001 ? v001 : &quot;&quot;)) return NULL;
+
+    if (!v002 || !v002-&gt;v001 || !v002-&gt;v001[0]) {
+        if (!fn_004(&amp;v003, &quot;Clarification evidence:\n(no accepted answers)\n&quot;)) {
+            free(v003.v001);
+            return NULL;
+        }
+    } else {
+        if (!fn_004(&amp;v003, &quot;Clarification evidence:\n%s&quot;, v002-&gt;v001)) {
+            free(v003.v001);
+            return NULL;
+        }
+    }
+
+    v004 = v003.v001;
+    return v004;
+}
+
+/* Run the clarification loop. */
+static int fn_010(const T003 *v001,
+                  T001 v002,
+                  void *v003,
+                  T002 v004,
+                  void *v005,
+                  T005 *v006)
+{
+    T004 v007;
+    int v008;
+    int v009;
+
+    if (!v001 || !v001-&gt;v001 || !v002 || !v004 || !v006) return 1;
+
+    memset(v006, 0, sizeof(*v006));
+    memset(&amp;v007, 0, sizeof(v007));
+
+    v008 = fn_003(v001-&gt;v001);
+
+    for (v009 = 0; v009 &lt; C001; ++v009) {
+        char v010[C003];
+        char v011[C002];
+        char v012[C002];
+        char *v013;
+        int v014;
+
+        fn_006(v001, v007.v001, v008, v010, sizeof(v010));
+
+        v011[0] = &#x27;\0&#x27;;
+        if (!v004(v010, v011, sizeof(v011), v005)) {
+            break;
+        }
+
+        fn_007(v011, v012, sizeof(v012));
+        v014 = fn_008(v012);
+
+        if (v014) {
+            break;
+        }
+
+        if (v012[0] == &#x27;\0&#x27;) {
+            break;
+        }
+
+        printf(&quot;\nQuestion %d:\n%s\n&quot;, v009 + 1, v012);
+        printf(&quot;Answer; submit an empty line to stop:\n&quot;);
+
+        v013 = fn_005(v002, v003);
+        if (!v013) break;
+
+        fn_002(v013);
+        if (v013[0] == &#x27;\0&#x27;) {
+            free(v013);
+            break;
+        }
+
+        if (!fn_004(&amp;v007, &quot;Question %d: %s\n&quot;, v009 + 1, v012) ||
+            !fn_004(&amp;v007, &quot;Answer: %s\n\n&quot;, v013)) {
+            free(v013);
+            free(v007.v001);
+            return 2;
+        }
+
+        ++v006-&gt;v002;
+        free(v013);
+    }
+
+    v006-&gt;v001 = fn_009(v001-&gt;v001, &amp;v007);
+    free(v007.v001);
+
+    return v006-&gt;v001 ? 0 : 2;
+}
+
+/* Collect unique placeholders written as {{id}}. */
+static int fn_011(const char *v001, char v002[][128], int v003)
+{
+    int v004 = 0;
+    const char *v005;
+
+    if (!v001 || !v002 || v003 &lt;= 0) return 0;
+
+    v005 = v001;
+    while ((v005 = strstr(v005, &quot;{{&quot;)) != NULL) {
+        const char *v006 = strstr(v005 + 2, &quot;}}&quot;);
+        char v007[128];
+        size_t v008;
+        int v009 = 0;
+
+        if (!v006) break;
+
+        v008 = (size_t)(v006 - (v005 + 2));
+        if (v008 &gt;= sizeof(v007)) v008 = sizeof(v007) - 1;
+
+        memcpy(v007, v005 + 2, v008);
+        v007[v008] = &#x27;\0&#x27;;
+        fn_002(v007);
+
+        if (v007[0]) {
+            for (int v010 = 0; v010 &lt; v004; ++v010) {
+                if (strcmp(v002[v010], v007) == 0) {
+                    v009 = 1;
+                    break;
+                }
+            }
+
+            if (!v009 &amp;&amp; v004 &lt; v003) {
+                snprintf(v002[v004], 128, &quot;%s&quot;, v007);
+                ++v004;
+            }
+        }
+
+        v005 = v006 + 2;
+    }
+
+    return v004;
+}
+
+/* Return true if a structured spec declares a matching editable parameter. */
+static int fn_012(const char *v001, const char *v002)
+{
+    char v003[256];
+    char v004[256];
+
+    if (!v001 || !v002 || !v002[0]) return 0;
+
+    snprintf(v003, sizeof(v003), &quot;SCALAR: %s:&quot;, v002);
+    snprintf(v004, sizeof(v004), &quot;STRING: %s:&quot;, v002);
+
+    return (strstr(v001, v003) != NULL || strstr(v001, v004) != NULL) ? 1 : 0;
+}
+
+/* Validate that every {{id}} placeholder has an explicit parameter declaration. */
+static T006 fn_013(const char *v001)
+{
+    T006 v002;
+    char v003[C004][128];
+    int v004;
+    int v005 = 0;
+
+    memset(&amp;v002, 0, sizeof(v002));
+    v002.v001 = 1;
+
+    if (!v001 || !v001[0]) return v002;
+
+    v004 = fn_011(v001, v003, C004);
+    if (v004 &lt;= 0) return v002;
+
+    for (int v006 = 0; v006 &lt; v004; ++v006) {
+        if (!fn_012(v001, v003[v006])) {
+            size_t v007;
+            v002.v001 = 0;
+            ++v005;
+
+            v007 = strlen(v002.v002);
+            if (v007 + 4 &lt; sizeof(v002.v002)) {
+                if (v007 &gt; 0) {
+                    strncat(v002.v002, &quot;, &quot;, sizeof(v002.v002) - strlen(v002.v002) - 1);
+                }
+                strncat(v002.v002, v003[v006], sizeof(v002.v002) - strlen(v002.v002) - 1);
+            }
+        }
+    }
+
+    (void)v005;
+    return v002;
+}
+
+/* Release clarification output. */
+static void fn_014(T005 *v001)
+{
+    if (!v001) return;
+    if (v001-&gt;v001) free(v001-&gt;v001);
+    memset(v001, 0, sizeof(*v001));
+}
+</code></pre>
+    </section>
+
+    <p class="foot">Function names, type names, field names, and local variables may be anonymized by design. Comments and control flow are preserved to make the engineering approach reviewable without exposing private details.</p>
+  </main>
+
+  <script>
+    function copyCode() {
+      const el = document.getElementById('code-block');
+      if (!el) return;
+      navigator.clipboard.writeText(el.innerText).then(() => {
+        const btn = document.querySelector('button');
+        if (btn) {
+          const old = btn.textContent;
+          btn.textContent = 'Copied';
+          setTimeout(() => btn.textContent = old, 1200);
+        }
+      });
+    }
+  </script>
+</body>
+</html>
