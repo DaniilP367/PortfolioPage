@@ -1,0 +1,176 @@
+Galaxy One - Modular Ship System
+Portfolio Code Excerpt
+
+NOTE:
+This is a curated public excerpt, not the full production source.
+The goal is to show the base architecture of the modular ship damage layer without exposing full gameplay integration.
+
+What this excerpt shows:
+- A reusable Unreal Engine C++ ship module component.
+- Module integrity stored as a 0..100 value.
+- Automatic state transition: Active -> Damaged -> Critical -> Destroyed.
+- Blueprint-callable damage and repair API.
+- A state-change hook for module-specific behavior.
+
+What is intentionally not shown:
+- Full header file layout and project-specific include paths.
+- Energy / power routing implementation.
+- Movement-system integration.
+- Weapon, engine, fuel, UI, VFX, audio, replication, and save-game integration.
+- Any game-specific balancing values outside this base component.
+
+------------------------------------------------------------
+Minimal public declarations shown inline for context
+-------------------------------------------------------------
+
+// Public excerpt: enough declarations to understand the component.
+// Full header metadata and unrelated project details are intentionally omitted.
+
+UENUM(BlueprintType)
+enum class EGOShipModuleState : uint8
+{
+	Active UMETA(DisplayName="Active"),
+	Damaged UMETA(DisplayName="Damaged"),
+	Critical UMETA(DisplayName="Critical"),
+	Destroyed UMETA(DisplayName="Destroyed")
+};
+
+UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
+class P4GALAXYONE_API UGOShipModuleComponent : public USceneComponent
+{
+	GENERATED_BODY()
+
+public:
+	UGOShipModuleComponent();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="GO|ShipModule")
+	FName ModuleId = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="GO|ShipModule")
+	EGOShipModuleState ModuleState = EGOShipModuleState::Active;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="GO|ShipModule|Damage")
+	float ModuleIntegrity = 100.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="GO|ShipModule|Damage")
+	float DamagedIntegrityThreshold = 70.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="GO|ShipModule|Damage")
+	float CriticalIntegrityThreshold = 35.f;
+
+	UFUNCTION(BlueprintCallable)
+	bool IsModuleActive() const;
+
+	UFUNCTION(BlueprintCallable)
+	bool IsModuleDestroyed() const;
+
+	UFUNCTION(BlueprintCallable)
+	void SetModuleIntegrity(float NewIntegrity);
+
+	UFUNCTION(BlueprintCallable)
+	float ApplyModuleDamage(float DamageAmount);
+
+	UFUNCTION(BlueprintCallable)
+	float RepairModuleIntegrity(float RepairAmount);
+
+	UFUNCTION(BlueprintCallable)
+	virtual void UpdateModuleStateFromIntegrity();
+
+protected:
+	virtual void OnModuleStateChanged(EGOShipModuleState OldState, EGOShipModuleState NewState);
+};
+
+------------------------------------------------------------
+Base module implementation
+------------------------------------------------------------
+
+#include "ShipModules/GOShipModuleComponent.h"
+
+UGOShipModuleComponent::UGOShipModuleComponent()
+{
+	PrimaryComponentTick.bCanEverTick = false;
+	bVisualizeComponent = true;
+}
+
+bool UGOShipModuleComponent::IsModuleActive() const
+{
+	return ModuleState != EGOShipModuleState::Destroyed;
+}
+
+bool UGOShipModuleComponent::IsModuleDestroyed() const
+{
+	return ModuleState == EGOShipModuleState::Destroyed;
+}
+
+void UGOShipModuleComponent::SetModuleIntegrity(float NewIntegrity)
+{
+	ModuleIntegrity = FMath::Clamp(NewIntegrity, 0.f, 100.f);
+	UpdateModuleStateFromIntegrity();
+}
+
+float UGOShipModuleComponent::ApplyModuleDamage(float DamageAmount)
+{
+	if (DamageAmount <= 0.f || IsModuleDestroyed())
+	{
+		return 0.f;
+	}
+
+	const float OldIntegrity = ModuleIntegrity;
+	SetModuleIntegrity(ModuleIntegrity - DamageAmount);
+
+	return OldIntegrity - ModuleIntegrity;
+}
+
+float UGOShipModuleComponent::RepairModuleIntegrity(float RepairAmount)
+{
+	if (RepairAmount <= 0.f)
+	{
+		return 0.f;
+	}
+
+	const float OldIntegrity = ModuleIntegrity;
+	SetModuleIntegrity(ModuleIntegrity + RepairAmount);
+
+	return ModuleIntegrity - OldIntegrity;
+}
+
+void UGOShipModuleComponent::UpdateModuleStateFromIntegrity()
+{
+	const EGOShipModuleState OldState = ModuleState;
+	EGOShipModuleState NewState = EGOShipModuleState::Active;
+
+	if (ModuleIntegrity <= 0.f)
+	{
+		NewState = EGOShipModuleState::Destroyed;
+	}
+	else if (ModuleIntegrity <= CriticalIntegrityThreshold)
+	{
+		NewState = EGOShipModuleState::Critical;
+	}
+	else if (ModuleIntegrity <= DamagedIntegrityThreshold)
+	{
+		NewState = EGOShipModuleState::Damaged;
+	}
+
+	ModuleState = NewState;
+
+	if (OldState != ModuleState)
+	{
+		OnModuleStateChanged(OldState, ModuleState);
+	}
+}
+
+void UGOShipModuleComponent::OnModuleStateChanged(EGOShipModuleState OldState, EGOShipModuleState NewState)
+{
+	// Public excerpt: this is the extension point for module-specific behavior.
+	// Not shown: engine output changes, energy routing, UI events, VFX/audio feedback,
+	// network replication, and gameplay-specific module reactions.
+}
+
+------------------------------------------------------------
+Portfolio explanation text
+------------------------------------------------------------
+
+This component is the base layer of Galaxy One's modular ship damage system.
+Each ship module owns an integrity value and automatically transitions between Active, Damaged, Critical, and Destroyed states based on configurable thresholds.
+The component exposes Blueprint-callable damage and repair functions, while OnModuleStateChanged provides an extension point for specialized modules such as engines, power systems, weapons, fuel lines, or sensors.

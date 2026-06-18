@@ -1,0 +1,415 @@
+Galaxy One - Flight Control & Movement
+Portfolio Code Excerpt
+
+NOTE:
+This is a curated public excerpt, not the full production source.
+The goal is to show the architecture and selected implementation details without exposing the full control algorithm.
+
+What this excerpt shows:
+- High-level control pipeline.
+- Desired direction -> current direction -> angular error flow.
+- Pitch/Roll coordination.
+- SlowZone mode architecture without full private braking math.
+- Physics-based torque and thrust application.
+
+What is intentionally not shown:
+- Full GOFlightPawn.h.
+- Full aim-space math and all edge-case handling.
+- Full predictive SlowZone / stop-distance implementation.
+- Full camera snapping / roll-follow implementation.
+- Debug-only code and internal tuning history.
+- Full stabilizer, maintain-speed, module-damage, and engine-control integration.
+
+------------------------------------------------------------
+1. Frame-level control pipeline
+------------------------------------------------------------
+
+// Public excerpt: this is the main architecture of the flight controller.
+// Each frame converts player input into a desired aim direction, compares it
+// against the ship's current orientation, generates axis commands, and sends
+// the final result to the physics movement component.
+
+void AGOFlightPawn::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	const float ControlDeltaSeconds =
+		FMath::Min(DeltaSeconds, MaxControlDeltaSeconds);
+
+	UpdateVirtualCursor(ControlDeltaSeconds);
+	ProjectLaser1ToAimSphere();
+	PointToDirection();
+	UpdateCurrentAngles();
+	DirectionToErr();
+	ResolveYawMode();
+	UpdateCurrentAngularRates(ControlDeltaSeconds);
+	ComputePitchRollFactor();
+	ComputeBaseAxisCommands();
+
+	ApplySlowZone(ControlDeltaSeconds);
+	ComputeFinalAxisCommands();
+	ApplyNetInputToMovement();
+	FlightMove->ApplyCurrentInputTorque(ControlDeltaSeconds);
+	UpdateCameraAimFollow(ControlDeltaSeconds);
+}
+
+------------------------------------------------------------
+2. Current orientation and desired-direction error excerpt
+------------------------------------------------------------
+
+// Public excerpt: this shows the core idea of the controller.
+// The ship does not rotate directly toward a mouse position.
+// Instead, the system keeps a DesiredDir in aim space, compares it with NowDir,
+// then derives RollErr, PitchErr, and YawErr from geometric projections.
+
+void AGOFlightPawn::UpdateCurrentAngles()
+{
+	AimSphereCenter = SM_SpaceShip->GetCenterOfMass();
+
+	const float SafeAimSphereRadius = FMath::Max(AimSphereRadius, MinAimSphereRadius);
+
+	NowDir = SM_SpaceShip->GetForwardVector().GetSafeNormal();
+	NowPoint = AimSphereCenter + NowDir * SafeAimSphereRadius;
+
+	const FVector LocalNowDir =
+		AimReferenceRotation.UnrotateVector(NowDir).GetSafeNormal();
+
+	const FVector LocalShipUp =
+		AimReferenceRotation.UnrotateVector(SM_SpaceShip->GetUpVector().GetSafeNormal()).GetSafeNormal();
+
+	RollNow = FRotator::NormalizeAxis(
+		FMath::RadiansToDegrees(FMath::Atan2(
+			LocalShipUp.Y,
+			LocalShipUp.Z)));
+
+	PitchNow = FRotator::NormalizeAxis(
+		FMath::RadiansToDegrees(FMath::Atan2(
+			LocalNowDir.Z,
+			LocalNowDir.X)));
+
+	YawNow = FRotator::NormalizeAxis(
+		FMath::RadiansToDegrees(FMath::Atan2(
+			LocalNowDir.Y,
+			LocalNowDir.X)));
+}
+
+void AGOFlightPawn::DirectionToErr()
+{
+	const FVector ShipForward = SM_SpaceShip->GetForwardVector().GetSafeNormal();
+	const FVector ShipRight = SM_SpaceShip->GetRightVector().GetSafeNormal();
+	const FVector ShipUp = SM_SpaceShip->GetUpVector().GetSafeNormal();
+
+	const FVector SafeDesiredDir =
+		DesiredDir.IsNearlyZero() ? NowDir : DesiredDir.GetSafeNormal();
+
+	const FVector DesiredOnRollPlaneRaw =
+		FVector::VectorPlaneProject(SafeDesiredDir, ShipForward);
+
+	float NewRollErr = 0.f;
+
+	if (!DesiredOnRollPlaneRaw.IsNearlyZero())
+	{
+		const FVector DesiredOnRollPlane =
+			DesiredOnRollPlaneRaw.GetSafeNormal();
+
+		NewRollErr = FRotator::NormalizeAxis(
+			FMath::RadiansToDegrees(FMath::Atan2(
+				FVector::DotProduct(DesiredOnRollPlane, ShipRight),
+				FVector::DotProduct(DesiredOnRollPlane, ShipUp))));
+	}
+
+	const FVector NowOnPitchPlane =
+		FVector::VectorPlaneProject(NowDir, ShipRight).GetSafeNormal();
+
+	const FVector DesiredOnPitchPlane =
+		FVector::VectorPlaneProject(SafeDesiredDir, ShipRight).GetSafeNormal();
+
+	const float DesiredPitchOffset = FRotator::NormalizeAxis(
+		FMath::RadiansToDegrees(FMath::Atan2(
+			FVector::DotProduct(FVector::CrossProduct(NowOnPitchPlane, DesiredOnPitchPlane), ShipRight),
+			FVector::DotProduct(NowOnPitchPlane, DesiredOnPitchPlane))));
+
+	DesiredPitch = FRotator::NormalizeAxis(PitchNow - DesiredPitchOffset);
+	float NewPitchErr = FRotator::NormalizeAxis(DesiredPitch - PitchNow);
+
+	const FVector NowOnYawPlane =
+		FVector::VectorPlaneProject(NowDir, ShipUp).GetSafeNormal();
+
+	const FVector DesiredOnYawPlane =
+		FVector::VectorPlaneProject(SafeDesiredDir, ShipUp).GetSafeNormal();
+
+	const float DesiredYawOffset = FRotator::NormalizeAxis(
+		FMath::RadiansToDegrees(FMath::Atan2(
+			FVector::DotProduct(FVector::CrossProduct(NowOnYawPlane, DesiredOnYawPlane), ShipUp),
+			FVector::DotProduct(NowOnYawPlane, DesiredOnYawPlane))));
+
+	DesiredRoll = FRotator::NormalizeAxis(RollNow + NewRollErr);
+	DesiredYaw = FRotator::NormalizeAxis(YawNow + DesiredYawOffset);
+
+	RollErr = NewRollErr;
+	PitchErr = NewPitchErr;
+	YawErr = FRotator::NormalizeAxis(DesiredYaw - YawNow);
+
+	// Not shown in public excerpt:
+	// - dead-zone edge cases
+	// - dive instead of back-roll behavior
+	// - horizon lock override
+	// - yaw assist mode
+	// - special cases around near-parallel projection vectors
+}
+
+------------------------------------------------------------
+3. Pitch/Roll coordination
+------------------------------------------------------------
+
+// Public excerpt: pitch is reduced while the ship still needs to roll into
+// the correct turning plane. This prevents pitch from consuming the final aim
+// error before roll alignment is ready.
+
+void AGOFlightPawn::ComputePitchRollFactor()
+{
+	if (RollAngLimit > 0.f)
+	{
+		const float AbsRollErr = FMath::Abs(RollErr);
+
+		PitchRollFactor = FMath::GetMappedRangeValueClamped(
+			FVector2D(0.f, RollAngLimit),
+			FVector2D(1.f, 0.f),
+			AbsRollErr);
+
+		if (AbsRollErr > DeadZoneAdvanced)
+		{
+			const float AbsPitchErr = FMath::Abs(PitchErr);
+
+			const float PitchLeadFactor =
+				AbsPitchErr / FMath::Max(AbsPitchErr + AbsRollErr, KINDA_SMALL_NUMBER);
+
+			PitchRollFactor = FMath::Min(PitchRollFactor, PitchLeadFactor);
+		}
+
+		if (bUseSpiralPitchCurve)
+		{
+			PitchRollFactor = FMath::Pow(
+				FMath::Clamp(PitchRollFactor, 0.f, 1.f),
+				FMath::Max(0.1f, SpiralPitchCurvePower));
+		}
+	}
+	else
+	{
+		PitchRollFactor = 1.f;
+	}
+}
+
+------------------------------------------------------------
+4. SlowZone architecture overview
+------------------------------------------------------------
+
+// Public excerpt: this shows that the controller supports multiple slowing / braking modes.
+// The full predictive braking formulas are intentionally not included.
+
+UENUM(BlueprintType)
+enum class EGOSlowZoneMode : uint8
+{
+	None UMETA(DisplayName="None"),
+	Basic UMETA(DisplayName="Basic"),
+	Plus UMETA(DisplayName="Plus"),
+	Advanced UMETA(DisplayName="Advanced")
+};
+
+void AGOFlightPawn::ApplySlowZone(float DeltaSeconds)
+{
+	RollSlowZone = RollBase;
+	PitchSlowZone = PitchBase;
+	YawSlowZone = YawBase;
+
+	// Not shown in public excerpt:
+	// - stop-distance prediction
+	// - per-axis braking acceleration calculation
+	// - PD final-zone tuning
+	// - overshoot prevention details
+
+	switch (SlowZoneMode)
+	{
+	case EGOSlowZoneMode::None:
+		break;
+
+	case EGOSlowZoneMode::Basic:
+		RollSlowZone = ApplySlowZoneBasic(RollErr, RollBase, SlowZoneLimitRoll);
+		PitchSlowZone = ApplySlowZoneBasic(PitchErr, PitchBase, SlowZoneLimitPitch);
+		YawSlowZone = ApplySlowZoneBasic(YawErr, YawBase, SlowZoneLimitYaw);
+		break;
+
+	case EGOSlowZoneMode::Advanced:
+		// Private implementation omitted from portfolio excerpt.
+		// Uses predicted stop distance and per-axis brake acceleration.
+		break;
+
+	case EGOSlowZoneMode::Plus:
+		// Private implementation omitted from portfolio excerpt.
+		// Uses a more responsive per-axis command strategy for close-range correction.
+		break;
+
+	default:
+		break;
+	}
+}
+
+void AGOFlightPawn::ComputeFinalAxisCommands()
+{
+	const float ClampedPitchRollFactor = FMath::Clamp(PitchRollFactor, 0.f, 1.f);
+
+	RollCmd = RollSlowZone;
+	PitchCmd = PitchSlowZone * ClampedPitchRollFactor;
+	YawCmd = YawSlowZone;
+
+	if (EnablePitch && !FMath::IsNearlyZero(ManualPitchInput))
+	{
+		PitchCmd = ManualPitchInput;
+	}
+
+	if (EnableYaw && !FMath::IsNearlyZero(ManualYawInput))
+	{
+		YawCmd = ManualYawInput;
+	}
+
+	if (EnableRoll && !FMath::IsNearlyZero(ManualRollInput))
+	{
+		RollCmd = ManualRollInput;
+	}
+}
+
+void AGOFlightPawn::ApplyNetInputToMovement()
+{
+	FlightMove->SetSpeedMaintainAdvancedDirection(DesiredDir);
+	FlightMove->SetAtmosphereMode(bSimulationFlightMode);
+	FlightMove->SetRoll(RollCmd);
+	FlightMove->SetPitch(PitchCmd);
+	FlightMove->SetYaw(YawCmd);
+	FlightMove->SetThrottle(ManualThrottleInput);
+}
+
+------------------------------------------------------------
+5. Physics movement component excerpt
+------------------------------------------------------------
+
+// Public excerpt: final axis commands are applied as physical torque.
+// Forward thrust is accumulated from configurable engine thrust sources.
+// Full stabilizer, maintain-speed, and damage-output logic is intentionally omitted.
+
+USTRUCT(BlueprintType)
+struct FGOFlightInputs
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite) float Pitch = 0.f;
+	UPROPERTY(BlueprintReadWrite) float Yaw = 0.f;
+	UPROPERTY(BlueprintReadWrite) float Roll = 0.f;
+	UPROPERTY(BlueprintReadWrite) float Throttle = 0.f;
+	UPROPERTY(BlueprintReadWrite) bool bAtmosphere = true;
+};
+
+USTRUCT(BlueprintType)
+struct FGOEngineThrustSource
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="GO|Engine|ThrustSource")
+	float ThrustPower = 5000.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="GO|Engine|ThrustSource|Damage")
+	float AvailablePowerFactor = 1.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="GO|Engine|ThrustSource|Damage")
+	float StallFactor = 1.f;
+};
+
+static float ClampAxis(float V)
+{
+	return FMath::Clamp(V, -1.f, 1.f);
+}
+
+static float ClampFactor(float V)
+{
+	return FMath::Clamp(V, 0.f, 1.f);
+}
+
+void UGOFlightMovementComponent::ApplyCurrentInputTorque(float DeltaTime)
+{
+	if (!UpdatedPrimitiveComponent)
+	{
+		APawn* OwnerPawn = GetPawnOwner();
+		UpdatedPrimitiveComponent = Cast<UPrimitiveComponent>(OwnerPawn ? OwnerPawn->GetRootComponent() : nullptr);
+	}
+
+	if (!UpdatedPrimitiveComponent)
+	{
+		return;
+	}
+
+	const double RollInput  = (double)Inputs.Roll;
+	const double PitchInput = (double)Inputs.Pitch;
+	const double YawInput   = (double)Inputs.Yaw;
+
+	const FVector ShipFwd   = UpdatedPrimitiveComponent->GetForwardVector();
+	const FVector ShipRight = UpdatedPrimitiveComponent->GetRightVector();
+	const FVector ShipUp    = UpdatedPrimitiveComponent->GetUpVector();
+
+	const double ScaledRollTorqueMultiplier = RollTorqueMultiplier * 1000000000.0;
+	const double ScaledPitchTorqueMultiplier = PitchTorqueMultiplier * 1000000000.0;
+	const double ScaledYawTorqueMultiplier = YawTorqueMultiplier * 1000000000.0;
+
+	const double RollTorqueCmd  = (RollInput  * ScaledRollTorqueMultiplier * -1.0);
+	const double PitchTorqueCmd = (PitchInput * ScaledPitchTorqueMultiplier * -1.0);
+	const double YawTorqueCmd   = (YawInput   * ScaledYawTorqueMultiplier);
+
+	UpdatedPrimitiveComponent->AddTorqueInRadians(ShipFwd * (float)RollTorqueCmd);
+	UpdatedPrimitiveComponent->AddTorqueInRadians(ShipRight * (float)PitchTorqueCmd);
+	UpdatedPrimitiveComponent->AddTorqueInRadians(ShipUp * (float)YawTorqueCmd);
+
+	const float FinalThrottleInput = FMath::Clamp(Inputs.Throttle, 0.f, 1.f);
+
+	if (FMath::IsNearlyZero(FinalThrottleInput))
+	{
+		return;
+	}
+
+	FVector TotalThrustForce = FVector::ZeroVector;
+
+	for (const FGOEngineThrustSource& Engine : EngineThrustSources)
+	{
+		const float EngineOutputFactor =
+			ClampFactor(Engine.AvailablePowerFactor) * ClampFactor(Engine.StallFactor);
+
+		const float EngineThrust =
+			(Engine.ThrustPower * 1000000.f) *
+			ThrottleMultiplier *
+			FinalThrottleInput *
+			EngineOutputFactor;
+
+		TotalThrustForce += ShipFwd * EngineThrust;
+	}
+
+	UpdatedPrimitiveComponent->AddForce(TotalThrustForce);
+}
+
+void UGOFlightMovementComponent::SetSpeedMaintainAdvancedDirection(FVector V)
+{
+	SpeedMaintainAdvancedDirection =
+		V.IsNearlyZero()
+		? FVector::ForwardVector
+		: V.GetSafeNormal();
+}
+
+void UGOFlightMovementComponent::SetPitch(float V)    { Inputs.Pitch = ClampAxis(V); }
+void UGOFlightMovementComponent::SetYaw(float V)      { Inputs.Yaw = ClampAxis(V); }
+void UGOFlightMovementComponent::SetRoll(float V)     { Inputs.Roll = ClampAxis(V); }
+void UGOFlightMovementComponent::SetThrottle(float V) { Inputs.Throttle = ClampAxis(V); }
+void UGOFlightMovementComponent::SetAtmosphereMode(bool bEnable) { Inputs.bAtmosphere = bEnable; }
+
+------------------------------------------------------------
+Portfolio explanation text
+------------------------------------------------------------
+
+This excerpt shows the architecture of Galaxy One's custom space flight controller.
+The pawn maintains a desired aim direction, compares it against the ship's current orientation, converts that difference into Roll/Pitch/Yaw errors, applies coordination and SlowZone logic, then sends normalized commands to a physics-based movement component.
+The movement component applies torque around the ship's local axes and accumulates engine thrust as physical force rather than rotating or moving the actor directly.

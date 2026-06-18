@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GalaxyOne: Modular Ship Component System — Code Excerpt</title>
+<meta name="description" content="Portfolio code excerpt for GalaxyOne: Modular Ship Component System" />
+<style>
+:root {
+  --bg: #07070a;
+  --panel: rgba(255,255,255,.055);
+  --panel2: rgba(255,255,255,.085);
+  --text: #f4f4f5;
+  --muted: rgba(244,244,245,.72);
+  --line: rgba(255,255,255,.14);
+  --accent: #ffffff;
+  --code: #0d0f14;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(255,255,255,.10), transparent 28rem),
+    radial-gradient(circle at 90% 10%, rgba(255,255,255,.06), transparent 24rem),
+    var(--bg);
+  color: var(--text);
+  font-family: "DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.55;
+}
+a { color: inherit; }
+.page { width: min(1160px, calc(100vw - 32px)); margin: 0 auto; padding: 36px 0 64px; }
+.topbar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:32px; }
+.back {
+  display:inline-flex; align-items:center; gap:8px; text-decoration:none;
+  border:1px solid var(--line); background: var(--panel); border-radius:999px;
+  padding:10px 14px; color:var(--muted); font-size:14px;
+}
+.back:hover { background: var(--panel2); color:var(--text); }
+.badge {
+  display:inline-flex; width:fit-content; border:1px solid var(--line); border-radius:999px;
+  padding:7px 10px; font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--muted); background:var(--panel);
+}
+h1 { font-size: clamp(34px, 5vw, 64px); line-height:.98; letter-spacing:-.045em; margin: 0 0 16px; max-width: 920px; }
+.subtitle { color:var(--muted); font-size: clamp(16px, 2vw, 20px); max-width: 840px; margin: 0 0 24px; }
+.notice {
+  display:grid; gap:10px; background:linear-gradient(180deg, var(--panel2), var(--panel));
+  border:1px solid var(--line); border-radius:20px; padding:18px; margin: 24px 0 28px;
+}
+.notice strong { font-size:14px; letter-spacing:.09em; text-transform:uppercase; }
+.notice span { color:var(--muted); }
+.actions { display:flex; flex-wrap:wrap; gap:10px; margin:24px 0 30px; }
+.btn {
+  display:inline-flex; align-items:center; justify-content:center; text-decoration:none;
+  padding:12px 16px; border-radius:999px; border:1px solid var(--line);
+  background: var(--text); color:#050505; font-weight:700; font-size:14px;
+}
+.btn.secondary { background:transparent; color:var(--text); }
+.code-card { border:1px solid var(--line); border-radius:22px; overflow:hidden; background:var(--code); box-shadow:0 24px 80px rgba(0,0,0,.35); }
+.code-toolbar {
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:12px 14px; border-bottom:1px solid var(--line); background:rgba(255,255,255,.05);
+}
+.code-title { color:var(--muted); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.copy-btn {
+  border:1px solid var(--line); background:rgba(255,255,255,.06); color:var(--text);
+  border-radius:999px; padding:8px 12px; cursor:pointer; font:inherit; font-size:13px;
+}
+.copy-btn:hover { background:rgba(255,255,255,.12); }
+pre { margin:0; padding:22px; overflow:auto; max-height:none; }
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 13px; line-height:1.62; color:#f1f5f9; white-space:pre;
+}
+.footer { color:var(--muted); font-size:13px; margin-top:28px; }
+@media (max-width: 700px) {
+  .topbar { align-items:flex-start; flex-direction:column; }
+  pre { padding:16px; }
+  code { font-size:12px; }
+}
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="topbar">
+    <a class="back" href="../index.html#demo">← Back to portfolio</a>
+    <div class="badge">Portfolio Code Excerpt</div>
+  </div>
+
+  <header>
+    <h1>GalaxyOne: Modular Ship Component System</h1>
+    <p class="subtitle">Selected UE5 C++ excerpt showing the reusable ship module component, integrity states, Blueprint damage/repair API, and module state-change extension point.</p>
+  </header>
+
+  <section class="notice" aria-label="Excerpt notice">
+    <strong>Public excerpt notice</strong>
+    <span>This page shows a curated portfolio excerpt. Full project integration, unrelated systems, private tuning history, and non-public implementation details are intentionally excluded.</span>
+  </section>
+
+  <div class="actions">
+    <a class="btn" href="#code">Jump to code</a>
+    <a class="btn secondary" href="../index.html#demo">Back to demo cards</a>
+  </div>
+
+  <section id="code" class="code-card">
+    <div class="code-toolbar">
+      <div class="code-title">GalaxyOne_ModularSystem_PortfolioExcerpt.txt</div>
+      <button class="copy-btn" type="button" data-copy-code>Copy excerpt</button>
+    </div>
+    <pre><code id="excerpt-code">Galaxy One - Modular Ship System
+Portfolio Code Excerpt
+
+NOTE:
+This is a curated public excerpt, not the full production source.
+The goal is to show the base architecture of the modular ship damage layer without exposing full gameplay integration.
+
+What this excerpt shows:
+- A reusable Unreal Engine C++ ship module component.
+- Module integrity stored as a 0..100 value.
+- Automatic state transition: Active -&gt; Damaged -&gt; Critical -&gt; Destroyed.
+- Blueprint-callable damage and repair API.
+- A state-change hook for module-specific behavior.
+
+What is intentionally not shown:
+- Full header file layout and project-specific include paths.
+- Energy / power routing implementation.
+- Movement-system integration.
+- Weapon, engine, fuel, UI, VFX, audio, replication, and save-game integration.
+- Any game-specific balancing values outside this base component.
+
+------------------------------------------------------------
+Minimal public declarations shown inline for context
+-------------------------------------------------------------
+
+// Public excerpt: enough declarations to understand the component.
+// Full header metadata and unrelated project details are intentionally omitted.
+
+UENUM(BlueprintType)
+enum class EGOShipModuleState : uint8
+{
+	Active UMETA(DisplayName=&quot;Active&quot;),
+	Damaged UMETA(DisplayName=&quot;Damaged&quot;),
+	Critical UMETA(DisplayName=&quot;Critical&quot;),
+	Destroyed UMETA(DisplayName=&quot;Destroyed&quot;)
+};
+
+UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
+class P4GALAXYONE_API UGOShipModuleComponent : public USceneComponent
+{
+	GENERATED_BODY()
+
+public:
+	UGOShipModuleComponent();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=&quot;GO|ShipModule&quot;)
+	FName ModuleId = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=&quot;GO|ShipModule&quot;)
+	EGOShipModuleState ModuleState = EGOShipModuleState::Active;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=&quot;GO|ShipModule|Damage&quot;)
+	float ModuleIntegrity = 100.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=&quot;GO|ShipModule|Damage&quot;)
+	float DamagedIntegrityThreshold = 70.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=&quot;GO|ShipModule|Damage&quot;)
+	float CriticalIntegrityThreshold = 35.f;
+
+	UFUNCTION(BlueprintCallable)
+	bool IsModuleActive() const;
+
+	UFUNCTION(BlueprintCallable)
+	bool IsModuleDestroyed() const;
+
+	UFUNCTION(BlueprintCallable)
+	void SetModuleIntegrity(float NewIntegrity);
+
+	UFUNCTION(BlueprintCallable)
+	float ApplyModuleDamage(float DamageAmount);
+
+	UFUNCTION(BlueprintCallable)
+	float RepairModuleIntegrity(float RepairAmount);
+
+	UFUNCTION(BlueprintCallable)
+	virtual void UpdateModuleStateFromIntegrity();
+
+protected:
+	virtual void OnModuleStateChanged(EGOShipModuleState OldState, EGOShipModuleState NewState);
+};
+
+------------------------------------------------------------
+Base module implementation
+------------------------------------------------------------
+
+#include &quot;ShipModules/GOShipModuleComponent.h&quot;
+
+UGOShipModuleComponent::UGOShipModuleComponent()
+{
+	PrimaryComponentTick.bCanEverTick = false;
+	bVisualizeComponent = true;
+}
+
+bool UGOShipModuleComponent::IsModuleActive() const
+{
+	return ModuleState != EGOShipModuleState::Destroyed;
+}
+
+bool UGOShipModuleComponent::IsModuleDestroyed() const
+{
+	return ModuleState == EGOShipModuleState::Destroyed;
+}
+
+void UGOShipModuleComponent::SetModuleIntegrity(float NewIntegrity)
+{
+	ModuleIntegrity = FMath::Clamp(NewIntegrity, 0.f, 100.f);
+	UpdateModuleStateFromIntegrity();
+}
+
+float UGOShipModuleComponent::ApplyModuleDamage(float DamageAmount)
+{
+	if (DamageAmount &lt;= 0.f || IsModuleDestroyed())
+	{
+		return 0.f;
+	}
+
+	const float OldIntegrity = ModuleIntegrity;
+	SetModuleIntegrity(ModuleIntegrity - DamageAmount);
+
+	return OldIntegrity - ModuleIntegrity;
+}
+
+float UGOShipModuleComponent::RepairModuleIntegrity(float RepairAmount)
+{
+	if (RepairAmount &lt;= 0.f)
+	{
+		return 0.f;
+	}
+
+	const float OldIntegrity = ModuleIntegrity;
+	SetModuleIntegrity(ModuleIntegrity + RepairAmount);
+
+	return ModuleIntegrity - OldIntegrity;
+}
+
+void UGOShipModuleComponent::UpdateModuleStateFromIntegrity()
+{
+	const EGOShipModuleState OldState = ModuleState;
+	EGOShipModuleState NewState = EGOShipModuleState::Active;
+
+	if (ModuleIntegrity &lt;= 0.f)
+	{
+		NewState = EGOShipModuleState::Destroyed;
+	}
+	else if (ModuleIntegrity &lt;= CriticalIntegrityThreshold)
+	{
+		NewState = EGOShipModuleState::Critical;
+	}
+	else if (ModuleIntegrity &lt;= DamagedIntegrityThreshold)
+	{
+		NewState = EGOShipModuleState::Damaged;
+	}
+
+	ModuleState = NewState;
+
+	if (OldState != ModuleState)
+	{
+		OnModuleStateChanged(OldState, ModuleState);
+	}
+}
+
+void UGOShipModuleComponent::OnModuleStateChanged(EGOShipModuleState OldState, EGOShipModuleState NewState)
+{
+	// Public excerpt: this is the extension point for module-specific behavior.
+	// Not shown: engine output changes, energy routing, UI events, VFX/audio feedback,
+	// network replication, and gameplay-specific module reactions.
+}
+
+------------------------------------------------------------
+Portfolio explanation text
+------------------------------------------------------------
+
+This component is the base layer of Galaxy One&#x27;s modular ship damage system.
+Each ship module owns an integrity value and automatically transitions between Active, Damaged, Critical, and Destroyed states based on configurable thresholds.
+The component exposes Blueprint-callable damage and repair functions, while OnModuleStateChanged provides an extension point for specialized modules such as engines, power systems, weapons, fuel lines, or sensors.</code></pre>
+  </section>
+
+  <p class="footer">© 2026 Daniil Perederii. Built as a portfolio excerpt page.</p>
+</main>
+<script>
+(function() {
+  const btn = document.querySelector('[data-copy-code]');
+  const code = document.getElementById('excerpt-code');
+  if (!btn || !code) return;
+  btn.addEventListener('click', async function() {
+    try {
+      await navigator.clipboard.writeText(code.textContent || '');
+      const old = btn.textContent;
+      btn.textContent = 'Copied';
+      setTimeout(() => btn.textContent = old, 1400);
+    } catch (e) {
+      btn.textContent = 'Copy failed';
+      setTimeout(() => btn.textContent = 'Copy excerpt', 1400);
+    }
+  });
+})();
+</script>
+</body>
+</html>

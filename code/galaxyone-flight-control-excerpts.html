@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GalaxyOne: Flight Control &amp; Movement — Code Excerpt</title>
+<meta name="description" content="Portfolio code excerpt for GalaxyOne: Flight Control &amp; Movement" />
+<style>
+:root {
+  --bg: #07070a;
+  --panel: rgba(255,255,255,.055);
+  --panel2: rgba(255,255,255,.085);
+  --text: #f4f4f5;
+  --muted: rgba(244,244,245,.72);
+  --line: rgba(255,255,255,.14);
+  --accent: #ffffff;
+  --code: #0d0f14;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(255,255,255,.10), transparent 28rem),
+    radial-gradient(circle at 90% 10%, rgba(255,255,255,.06), transparent 24rem),
+    var(--bg);
+  color: var(--text);
+  font-family: "DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.55;
+}
+a { color: inherit; }
+.page { width: min(1160px, calc(100vw - 32px)); margin: 0 auto; padding: 36px 0 64px; }
+.topbar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:32px; }
+.back {
+  display:inline-flex; align-items:center; gap:8px; text-decoration:none;
+  border:1px solid var(--line); background: var(--panel); border-radius:999px;
+  padding:10px 14px; color:var(--muted); font-size:14px;
+}
+.back:hover { background: var(--panel2); color:var(--text); }
+.badge {
+  display:inline-flex; width:fit-content; border:1px solid var(--line); border-radius:999px;
+  padding:7px 10px; font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--muted); background:var(--panel);
+}
+h1 { font-size: clamp(34px, 5vw, 64px); line-height:.98; letter-spacing:-.045em; margin: 0 0 16px; max-width: 920px; }
+.subtitle { color:var(--muted); font-size: clamp(16px, 2vw, 20px); max-width: 840px; margin: 0 0 24px; }
+.notice {
+  display:grid; gap:10px; background:linear-gradient(180deg, var(--panel2), var(--panel));
+  border:1px solid var(--line); border-radius:20px; padding:18px; margin: 24px 0 28px;
+}
+.notice strong { font-size:14px; letter-spacing:.09em; text-transform:uppercase; }
+.notice span { color:var(--muted); }
+.actions { display:flex; flex-wrap:wrap; gap:10px; margin:24px 0 30px; }
+.btn {
+  display:inline-flex; align-items:center; justify-content:center; text-decoration:none;
+  padding:12px 16px; border-radius:999px; border:1px solid var(--line);
+  background: var(--text); color:#050505; font-weight:700; font-size:14px;
+}
+.btn.secondary { background:transparent; color:var(--text); }
+.code-card { border:1px solid var(--line); border-radius:22px; overflow:hidden; background:var(--code); box-shadow:0 24px 80px rgba(0,0,0,.35); }
+.code-toolbar {
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:12px 14px; border-bottom:1px solid var(--line); background:rgba(255,255,255,.05);
+}
+.code-title { color:var(--muted); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.copy-btn {
+  border:1px solid var(--line); background:rgba(255,255,255,.06); color:var(--text);
+  border-radius:999px; padding:8px 12px; cursor:pointer; font:inherit; font-size:13px;
+}
+.copy-btn:hover { background:rgba(255,255,255,.12); }
+pre { margin:0; padding:22px; overflow:auto; max-height:none; }
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 13px; line-height:1.62; color:#f1f5f9; white-space:pre;
+}
+.footer { color:var(--muted); font-size:13px; margin-top:28px; }
+@media (max-width: 700px) {
+  .topbar { align-items:flex-start; flex-direction:column; }
+  pre { padding:16px; }
+  code { font-size:12px; }
+}
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="topbar">
+    <a class="back" href="../index.html#demo">← Back to portfolio</a>
+    <div class="badge">Portfolio Code Excerpt</div>
+  </div>
+
+  <header>
+    <h1>GalaxyOne: Flight Control &amp; Movement</h1>
+    <p class="subtitle">Selected UE5 C++ excerpt showing the frame-level control pipeline, angle error flow, pitch/roll coordination, SlowZone architecture, and physics torque/thrust application.</p>
+  </header>
+
+  <section class="notice" aria-label="Excerpt notice">
+    <strong>Public excerpt notice</strong>
+    <span>This page shows a curated portfolio excerpt. Full project integration, unrelated systems, private tuning history, and non-public implementation details are intentionally excluded.</span>
+  </section>
+
+  <div class="actions">
+    <a class="btn" href="#code">Jump to code</a>
+    <a class="btn secondary" href="../index.html#demo">Back to demo cards</a>
+  </div>
+
+  <section id="code" class="code-card">
+    <div class="code-toolbar">
+      <div class="code-title">GalaxyOne_FlightControl_Movement_PortfolioExcerpt.txt</div>
+      <button class="copy-btn" type="button" data-copy-code>Copy excerpt</button>
+    </div>
+    <pre><code id="excerpt-code">Galaxy One - Flight Control &amp; Movement
+Portfolio Code Excerpt
+
+NOTE:
+This is a curated public excerpt, not the full production source.
+The goal is to show the architecture and selected implementation details without exposing the full control algorithm.
+
+What this excerpt shows:
+- High-level control pipeline.
+- Desired direction -&gt; current direction -&gt; angular error flow.
+- Pitch/Roll coordination.
+- SlowZone mode architecture without full private braking math.
+- Physics-based torque and thrust application.
+
+What is intentionally not shown:
+- Full GOFlightPawn.h.
+- Full aim-space math and all edge-case handling.
+- Full predictive SlowZone / stop-distance implementation.
+- Full camera snapping / roll-follow implementation.
+- Debug-only code and internal tuning history.
+- Full stabilizer, maintain-speed, module-damage, and engine-control integration.
+
+------------------------------------------------------------
+1. Frame-level control pipeline
+------------------------------------------------------------
+
+// Public excerpt: this is the main architecture of the flight controller.
+// Each frame converts player input into a desired aim direction, compares it
+// against the ship&#x27;s current orientation, generates axis commands, and sends
+// the final result to the physics movement component.
+
+void AGOFlightPawn::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	const float ControlDeltaSeconds =
+		FMath::Min(DeltaSeconds, MaxControlDeltaSeconds);
+
+	UpdateVirtualCursor(ControlDeltaSeconds);
+	ProjectLaser1ToAimSphere();
+	PointToDirection();
+	UpdateCurrentAngles();
+	DirectionToErr();
+	ResolveYawMode();
+	UpdateCurrentAngularRates(ControlDeltaSeconds);
+	ComputePitchRollFactor();
+	ComputeBaseAxisCommands();
+
+	ApplySlowZone(ControlDeltaSeconds);
+	ComputeFinalAxisCommands();
+	ApplyNetInputToMovement();
+	FlightMove-&gt;ApplyCurrentInputTorque(ControlDeltaSeconds);
+	UpdateCameraAimFollow(ControlDeltaSeconds);
+}
+
+------------------------------------------------------------
+2. Current orientation and desired-direction error excerpt
+------------------------------------------------------------
+
+// Public excerpt: this shows the core idea of the controller.
+// The ship does not rotate directly toward a mouse position.
+// Instead, the system keeps a DesiredDir in aim space, compares it with NowDir,
+// then derives RollErr, PitchErr, and YawErr from geometric projections.
+
+void AGOFlightPawn::UpdateCurrentAngles()
+{
+	AimSphereCenter = SM_SpaceShip-&gt;GetCenterOfMass();
+
+	const float SafeAimSphereRadius = FMath::Max(AimSphereRadius, MinAimSphereRadius);
+
+	NowDir = SM_SpaceShip-&gt;GetForwardVector().GetSafeNormal();
+	NowPoint = AimSphereCenter + NowDir * SafeAimSphereRadius;
+
+	const FVector LocalNowDir =
+		AimReferenceRotation.UnrotateVector(NowDir).GetSafeNormal();
+
+	const FVector LocalShipUp =
+		AimReferenceRotation.UnrotateVector(SM_SpaceShip-&gt;GetUpVector().GetSafeNormal()).GetSafeNormal();
+
+	RollNow = FRotator::NormalizeAxis(
+		FMath::RadiansToDegrees(FMath::Atan2(
+			LocalShipUp.Y,
+			LocalShipUp.Z)));
+
+	PitchNow = FRotator::NormalizeAxis(
+		FMath::RadiansToDegrees(FMath::Atan2(
+			LocalNowDir.Z,
+			LocalNowDir.X)));
+
+	YawNow = FRotator::NormalizeAxis(
+		FMath::RadiansToDegrees(FMath::Atan2(
+			LocalNowDir.Y,
+			LocalNowDir.X)));
+}
+
+void AGOFlightPawn::DirectionToErr()
+{
+	const FVector ShipForward = SM_SpaceShip-&gt;GetForwardVector().GetSafeNormal();
+	const FVector ShipRight = SM_SpaceShip-&gt;GetRightVector().GetSafeNormal();
+	const FVector ShipUp = SM_SpaceShip-&gt;GetUpVector().GetSafeNormal();
+
+	const FVector SafeDesiredDir =
+		DesiredDir.IsNearlyZero() ? NowDir : DesiredDir.GetSafeNormal();
+
+	const FVector DesiredOnRollPlaneRaw =
+		FVector::VectorPlaneProject(SafeDesiredDir, ShipForward);
+
+	float NewRollErr = 0.f;
+
+	if (!DesiredOnRollPlaneRaw.IsNearlyZero())
+	{
+		const FVector DesiredOnRollPlane =
+			DesiredOnRollPlaneRaw.GetSafeNormal();
+
+		NewRollErr = FRotator::NormalizeAxis(
+			FMath::RadiansToDegrees(FMath::Atan2(
+				FVector::DotProduct(DesiredOnRollPlane, ShipRight),
+				FVector::DotProduct(DesiredOnRollPlane, ShipUp))));
+	}
+
+	const FVector NowOnPitchPlane =
+		FVector::VectorPlaneProject(NowDir, ShipRight).GetSafeNormal();
+
+	const FVector DesiredOnPitchPlane =
+		FVector::VectorPlaneProject(SafeDesiredDir, ShipRight).GetSafeNormal();
+
+	const float DesiredPitchOffset = FRotator::NormalizeAxis(
+		FMath::RadiansToDegrees(FMath::Atan2(
+			FVector::DotProduct(FVector::CrossProduct(NowOnPitchPlane, DesiredOnPitchPlane), ShipRight),
+			FVector::DotProduct(NowOnPitchPlane, DesiredOnPitchPlane))));
+
+	DesiredPitch = FRotator::NormalizeAxis(PitchNow - DesiredPitchOffset);
+	float NewPitchErr = FRotator::NormalizeAxis(DesiredPitch - PitchNow);
+
+	const FVector NowOnYawPlane =
+		FVector::VectorPlaneProject(NowDir, ShipUp).GetSafeNormal();
+
+	const FVector DesiredOnYawPlane =
+		FVector::VectorPlaneProject(SafeDesiredDir, ShipUp).GetSafeNormal();
+
+	const float DesiredYawOffset = FRotator::NormalizeAxis(
+		FMath::RadiansToDegrees(FMath::Atan2(
+			FVector::DotProduct(FVector::CrossProduct(NowOnYawPlane, DesiredOnYawPlane), ShipUp),
+			FVector::DotProduct(NowOnYawPlane, DesiredOnYawPlane))));
+
+	DesiredRoll = FRotator::NormalizeAxis(RollNow + NewRollErr);
+	DesiredYaw = FRotator::NormalizeAxis(YawNow + DesiredYawOffset);
+
+	RollErr = NewRollErr;
+	PitchErr = NewPitchErr;
+	YawErr = FRotator::NormalizeAxis(DesiredYaw - YawNow);
+
+	// Not shown in public excerpt:
+	// - dead-zone edge cases
+	// - dive instead of back-roll behavior
+	// - horizon lock override
+	// - yaw assist mode
+	// - special cases around near-parallel projection vectors
+}
+
+------------------------------------------------------------
+3. Pitch/Roll coordination
+------------------------------------------------------------
+
+// Public excerpt: pitch is reduced while the ship still needs to roll into
+// the correct turning plane. This prevents pitch from consuming the final aim
+// error before roll alignment is ready.
+
+void AGOFlightPawn::ComputePitchRollFactor()
+{
+	if (RollAngLimit &gt; 0.f)
+	{
+		const float AbsRollErr = FMath::Abs(RollErr);
+
+		PitchRollFactor = FMath::GetMappedRangeValueClamped(
+			FVector2D(0.f, RollAngLimit),
+			FVector2D(1.f, 0.f),
+			AbsRollErr);
+
+		if (AbsRollErr &gt; DeadZoneAdvanced)
+		{
+			const float AbsPitchErr = FMath::Abs(PitchErr);
+
+			const float PitchLeadFactor =
+				AbsPitchErr / FMath::Max(AbsPitchErr + AbsRollErr, KINDA_SMALL_NUMBER);
+
+			PitchRollFactor = FMath::Min(PitchRollFactor, PitchLeadFactor);
+		}
+
+		if (bUseSpiralPitchCurve)
+		{
+			PitchRollFactor = FMath::Pow(
+				FMath::Clamp(PitchRollFactor, 0.f, 1.f),
+				FMath::Max(0.1f, SpiralPitchCurvePower));
+		}
+	}
+	else
+	{
+		PitchRollFactor = 1.f;
+	}
+}
+
+------------------------------------------------------------
+4. SlowZone architecture overview
+------------------------------------------------------------
+
+// Public excerpt: this shows that the controller supports multiple slowing / braking modes.
+// The full predictive braking formulas are intentionally not included.
+
+UENUM(BlueprintType)
+enum class EGOSlowZoneMode : uint8
+{
+	None UMETA(DisplayName=&quot;None&quot;),
+	Basic UMETA(DisplayName=&quot;Basic&quot;),
+	Plus UMETA(DisplayName=&quot;Plus&quot;),
+	Advanced UMETA(DisplayName=&quot;Advanced&quot;)
+};
+
+void AGOFlightPawn::ApplySlowZone(float DeltaSeconds)
+{
+	RollSlowZone = RollBase;
+	PitchSlowZone = PitchBase;
+	YawSlowZone = YawBase;
+
+	// Not shown in public excerpt:
+	// - stop-distance prediction
+	// - per-axis braking acceleration calculation
+	// - PD final-zone tuning
+	// - overshoot prevention details
+
+	switch (SlowZoneMode)
+	{
+	case EGOSlowZoneMode::None:
+		break;
+
+	case EGOSlowZoneMode::Basic:
+		RollSlowZone = ApplySlowZoneBasic(RollErr, RollBase, SlowZoneLimitRoll);
+		PitchSlowZone = ApplySlowZoneBasic(PitchErr, PitchBase, SlowZoneLimitPitch);
+		YawSlowZone = ApplySlowZoneBasic(YawErr, YawBase, SlowZoneLimitYaw);
+		break;
+
+	case EGOSlowZoneMode::Advanced:
+		// Private implementation omitted from portfolio excerpt.
+		// Uses predicted stop distance and per-axis brake acceleration.
+		break;
+
+	case EGOSlowZoneMode::Plus:
+		// Private implementation omitted from portfolio excerpt.
+		// Uses a more responsive per-axis command strategy for close-range correction.
+		break;
+
+	default:
+		break;
+	}
+}
+
+void AGOFlightPawn::ComputeFinalAxisCommands()
+{
+	const float ClampedPitchRollFactor = FMath::Clamp(PitchRollFactor, 0.f, 1.f);
+
+	RollCmd = RollSlowZone;
+	PitchCmd = PitchSlowZone * ClampedPitchRollFactor;
+	YawCmd = YawSlowZone;
+
+	if (EnablePitch &amp;&amp; !FMath::IsNearlyZero(ManualPitchInput))
+	{
+		PitchCmd = ManualPitchInput;
+	}
+
+	if (EnableYaw &amp;&amp; !FMath::IsNearlyZero(ManualYawInput))
+	{
+		YawCmd = ManualYawInput;
+	}
+
+	if (EnableRoll &amp;&amp; !FMath::IsNearlyZero(ManualRollInput))
+	{
+		RollCmd = ManualRollInput;
+	}
+}
+
+void AGOFlightPawn::ApplyNetInputToMovement()
+{
+	FlightMove-&gt;SetSpeedMaintainAdvancedDirection(DesiredDir);
+	FlightMove-&gt;SetAtmosphereMode(bSimulationFlightMode);
+	FlightMove-&gt;SetRoll(RollCmd);
+	FlightMove-&gt;SetPitch(PitchCmd);
+	FlightMove-&gt;SetYaw(YawCmd);
+	FlightMove-&gt;SetThrottle(ManualThrottleInput);
+}
+
+------------------------------------------------------------
+5. Physics movement component excerpt
+------------------------------------------------------------
+
+// Public excerpt: final axis commands are applied as physical torque.
+// Forward thrust is accumulated from configurable engine thrust sources.
+// Full stabilizer, maintain-speed, and damage-output logic is intentionally omitted.
+
+USTRUCT(BlueprintType)
+struct FGOFlightInputs
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite) float Pitch = 0.f;
+	UPROPERTY(BlueprintReadWrite) float Yaw = 0.f;
+	UPROPERTY(BlueprintReadWrite) float Roll = 0.f;
+	UPROPERTY(BlueprintReadWrite) float Throttle = 0.f;
+	UPROPERTY(BlueprintReadWrite) bool bAtmosphere = true;
+};
+
+USTRUCT(BlueprintType)
+struct FGOEngineThrustSource
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=&quot;GO|Engine|ThrustSource&quot;)
+	float ThrustPower = 5000.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=&quot;GO|Engine|ThrustSource|Damage&quot;)
+	float AvailablePowerFactor = 1.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=&quot;GO|Engine|ThrustSource|Damage&quot;)
+	float StallFactor = 1.f;
+};
+
+static float ClampAxis(float V)
+{
+	return FMath::Clamp(V, -1.f, 1.f);
+}
+
+static float ClampFactor(float V)
+{
+	return FMath::Clamp(V, 0.f, 1.f);
+}
+
+void UGOFlightMovementComponent::ApplyCurrentInputTorque(float DeltaTime)
+{
+	if (!UpdatedPrimitiveComponent)
+	{
+		APawn* OwnerPawn = GetPawnOwner();
+		UpdatedPrimitiveComponent = Cast&lt;UPrimitiveComponent&gt;(OwnerPawn ? OwnerPawn-&gt;GetRootComponent() : nullptr);
+	}
+
+	if (!UpdatedPrimitiveComponent)
+	{
+		return;
+	}
+
+	const double RollInput  = (double)Inputs.Roll;
+	const double PitchInput = (double)Inputs.Pitch;
+	const double YawInput   = (double)Inputs.Yaw;
+
+	const FVector ShipFwd   = UpdatedPrimitiveComponent-&gt;GetForwardVector();
+	const FVector ShipRight = UpdatedPrimitiveComponent-&gt;GetRightVector();
+	const FVector ShipUp    = UpdatedPrimitiveComponent-&gt;GetUpVector();
+
+	const double ScaledRollTorqueMultiplier = RollTorqueMultiplier * 1000000000.0;
+	const double ScaledPitchTorqueMultiplier = PitchTorqueMultiplier * 1000000000.0;
+	const double ScaledYawTorqueMultiplier = YawTorqueMultiplier * 1000000000.0;
+
+	const double RollTorqueCmd  = (RollInput  * ScaledRollTorqueMultiplier * -1.0);
+	const double PitchTorqueCmd = (PitchInput * ScaledPitchTorqueMultiplier * -1.0);
+	const double YawTorqueCmd   = (YawInput   * ScaledYawTorqueMultiplier);
+
+	UpdatedPrimitiveComponent-&gt;AddTorqueInRadians(ShipFwd * (float)RollTorqueCmd);
+	UpdatedPrimitiveComponent-&gt;AddTorqueInRadians(ShipRight * (float)PitchTorqueCmd);
+	UpdatedPrimitiveComponent-&gt;AddTorqueInRadians(ShipUp * (float)YawTorqueCmd);
+
+	const float FinalThrottleInput = FMath::Clamp(Inputs.Throttle, 0.f, 1.f);
+
+	if (FMath::IsNearlyZero(FinalThrottleInput))
+	{
+		return;
+	}
+
+	FVector TotalThrustForce = FVector::ZeroVector;
+
+	for (const FGOEngineThrustSource&amp; Engine : EngineThrustSources)
+	{
+		const float EngineOutputFactor =
+			ClampFactor(Engine.AvailablePowerFactor) * ClampFactor(Engine.StallFactor);
+
+		const float EngineThrust =
+			(Engine.ThrustPower * 1000000.f) *
+			ThrottleMultiplier *
+			FinalThrottleInput *
+			EngineOutputFactor;
+
+		TotalThrustForce += ShipFwd * EngineThrust;
+	}
+
+	UpdatedPrimitiveComponent-&gt;AddForce(TotalThrustForce);
+}
+
+void UGOFlightMovementComponent::SetSpeedMaintainAdvancedDirection(FVector V)
+{
+	SpeedMaintainAdvancedDirection =
+		V.IsNearlyZero()
+		? FVector::ForwardVector
+		: V.GetSafeNormal();
+}
+
+void UGOFlightMovementComponent::SetPitch(float V)    { Inputs.Pitch = ClampAxis(V); }
+void UGOFlightMovementComponent::SetYaw(float V)      { Inputs.Yaw = ClampAxis(V); }
+void UGOFlightMovementComponent::SetRoll(float V)     { Inputs.Roll = ClampAxis(V); }
+void UGOFlightMovementComponent::SetThrottle(float V) { Inputs.Throttle = ClampAxis(V); }
+void UGOFlightMovementComponent::SetAtmosphereMode(bool bEnable) { Inputs.bAtmosphere = bEnable; }
+
+------------------------------------------------------------
+Portfolio explanation text
+------------------------------------------------------------
+
+This excerpt shows the architecture of Galaxy One&#x27;s custom space flight controller.
+The pawn maintains a desired aim direction, compares it against the ship&#x27;s current orientation, converts that difference into Roll/Pitch/Yaw errors, applies coordination and SlowZone logic, then sends normalized commands to a physics-based movement component.
+The movement component applies torque around the ship&#x27;s local axes and accumulates engine thrust as physical force rather than rotating or moving the actor directly.</code></pre>
+  </section>
+
+  <p class="footer">© 2026 Daniil Perederii. Built as a portfolio excerpt page.</p>
+</main>
+<script>
+(function() {
+  const btn = document.querySelector('[data-copy-code]');
+  const code = document.getElementById('excerpt-code');
+  if (!btn || !code) return;
+  btn.addEventListener('click', async function() {
+    try {
+      await navigator.clipboard.writeText(code.textContent || '');
+      const old = btn.textContent;
+      btn.textContent = 'Copied';
+      setTimeout(() => btn.textContent = old, 1400);
+    } catch (e) {
+      btn.textContent = 'Copy failed';
+      setTimeout(() => btn.textContent = 'Copy excerpt', 1400);
+    }
+  });
+})();
+</script>
+</body>
+</html>
